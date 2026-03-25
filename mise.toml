@@ -1,0 +1,11 @@
+experimental_monorepo_root = true
+
+[settings]
+task.output = "quiet"
+experimental = true
+auto_install = true
+
+[monorepo]
+config_roots = [
+    "cli",
+]

@@ -1,0 +1,18 @@
+[tools]
+dart = "3.11.2"
+
+[tasks.build]
+description = "Compile native binary"
+run = "dart compile exe bin/djo.dart -o build/djo"
+
+[tasks.compile]
+description = "Check compilation"
+run = "dart compile kernel bin/djo.dart -o /dev/null"
+
+[tasks.test]
+description = "Run tests"
+run = "dart test"
+
+[tasks.analyze]
+description = "Run static analysis"
+run = "dart analyze --fatal-infos"
