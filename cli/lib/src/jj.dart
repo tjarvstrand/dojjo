@@ -79,12 +79,18 @@ List<WorkspaceInfo> parseWorkspaceList(String output) =>
       );
     }).toList();
 
-Future<String> workspaceAdd(String path, [String? name]) => _run([
-  'workspace',
-  'add',
-  if (name != null) ...['--name', name],
-  path,
-]);
+Future<String> workspaceAdd(
+  String path, {
+  String? name,
+  String? revision,
+}) =>
+    _run([
+      'workspace',
+      'add',
+      if (name != null) ...['--name', name],
+      if (revision != null) ...['-r', revision],
+      path,
+    ]);
 
 Future<String> workspaceList() => _run(['workspace', 'list']);
 
@@ -110,6 +116,16 @@ Future<String> bookmarkDelete(String name) =>
 
 Future<String> bookmarkSet(String name, String revision) =>
     _run(['bookmark', 'set', name, '-r', revision]);
+
+Future<String> bookmarkTrack(String name, {required String remote}) =>
+    _run(['bookmark', 'track', '$name@$remote']);
+
+Future<String> gitPush({String? bookmark, bool all = false}) => _run([
+      'git',
+      'push',
+      if (all) '--all',
+      if (bookmark != null && !all) ...['--bookmark', bookmark],
+    ]);
 
 Future<String> squash() => _run(['squash']);
 

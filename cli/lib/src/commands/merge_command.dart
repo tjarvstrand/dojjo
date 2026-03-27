@@ -8,7 +8,9 @@ import 'package:dojjo/src/prompt.dart' as prompt;
 
 class MergeCommand extends Command<void> {
   MergeCommand(this._config) {
-    argParser.addFlag('yes', abbr: 'y', defaultsTo: false);
+    argParser
+      ..addFlag('yes', abbr: 'y', defaultsTo: false)
+      ..addFlag('push', defaultsTo: false, help: 'Push target bookmark after merge');
   }
 
   final Config _config;
@@ -59,6 +61,12 @@ class MergeCommand extends Command<void> {
     if (_config.merge.remove) {
       await jj.deleteDirectory(root);
     }
+
+    final shouldPush = argResults!.flag('push') || _config.merge.push;
+    if (shouldPush) {
+      await _step('push', () => jj.gitPush(bookmark: target));
+    }
+
     stdout.writeln('$root/..');
   }
 }

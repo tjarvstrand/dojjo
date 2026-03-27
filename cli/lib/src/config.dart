@@ -13,6 +13,7 @@ sealed class MergeConfig with _$MergeConfig {
     @Default(true) bool rebase,
     @Default(true) bool remove,
     @Default(true) bool verify,
+    @Default(false) bool push,
   }) = _MergeConfig;
 }
 
@@ -56,6 +57,7 @@ Config _parseToml(String content) {
       rebase: mergeMap['rebase'] as bool? ?? true,
       remove: mergeMap['remove'] as bool? ?? true,
       verify: mergeMap['verify'] as bool? ?? true,
+      push: mergeMap['push'] as bool? ?? false,
     ),
     list: ListConfig(
       url: listMap['url'] as String? ?? '',
@@ -94,6 +96,7 @@ Config _applyEnvOverrides(Config config) {
       rebase: _envBool(env, 'DOJJO_MERGE__REBASE') ?? config.merge.rebase,
       remove: _envBool(env, 'DOJJO_MERGE__REMOVE') ?? config.merge.remove,
       verify: _envBool(env, 'DOJJO_MERGE__VERIFY') ?? config.merge.verify,
+      push: _envBool(env, 'DOJJO_MERGE__PUSH') ?? config.merge.push,
     ),
   );
 }

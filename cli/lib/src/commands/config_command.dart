@@ -50,6 +50,7 @@ class ConfigShowCommand extends Command<void> {
     _show('merge.rebase', config.merge.rebase);
     _show('merge.remove', config.merge.remove);
     _show('merge.verify', config.merge.verify);
+    _show('merge.push', config.merge.push);
     _show('list.url', config.list.url);
     if (config.aliases.isNotEmpty) {
       for (final entry in config.aliases.entries) {

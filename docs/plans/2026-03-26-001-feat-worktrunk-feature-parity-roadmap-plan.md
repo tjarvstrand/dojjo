@@ -191,24 +191,23 @@ Worktrunk-compatible where possible, with jj-specific additions:
 
 **Goal:** Match worktrunk's switch ergonomics.
 
-### 4.1 Base Revision Support
+### 4.1 Base Revision Support ✅
 - `--base <revision>` flag on `switch --create`
 - Create workspace from a specific revision, not just current
 
-### 4.2 Execute After Switch
+### 4.2 Execute After Switch ✅
 - `-x`/`--execute <cmd>` flag
 - Run a command in the new workspace after switching (e.g., launch editor, start agent)
 - Template variable support in command string
 
-### 4.3 Previous Workspace Shortcut
+### 4.3 Previous Workspace Shortcut ✅
 - `djo switch -` — switch to the previously active workspace
-- Store last workspace in state file (`.jj/djo-state` or similar)
+- Stores last workspace in `.jj/djo-state`
 
-### 4.4 Interactive Picker
+### 4.4 Interactive Picker ✅
 - `djo switch` with no arguments opens interactive selection
-- Show workspace list with status indicators
-- Arrow key navigation + type-to-filter
-- Requires terminal UI library (investigate Dart options or shell out to `fzf`)
+- Uses `fzf` when available, falls back to numbered list
+- Saves current workspace as "previous" before switching
 
 ---
 
@@ -259,17 +258,17 @@ lint = "cargo clippy"
 
 **Goal:** Complete the create-work-merge-push cycle.
 
-### 6.1 Push Command
+### 6.1 Push Command ✅
 - `djo push` — runs `jj git push` for the current workspace's bookmark
 - `djo push --all` — push all tracked bookmarks
 
-### 6.2 Bookmark Tracking
+### 6.2 Bookmark Tracking ✅
 - Auto-track bookmarks on creation (`jj bookmark track`)
-- Show tracking state in `djo list`
+- Show tracking state in `djo list` (deferred — needs remote bookmark info in template)
 
-### 6.3 Merge + Push
-- Option to push target bookmark after merge: `djo merge main --push`
-- Or as a config default: `merge.push = true`
+### 6.3 Merge + Push ✅
+- `djo merge main --push` flag
+- `merge.push = true` config default
 
 ---
 
