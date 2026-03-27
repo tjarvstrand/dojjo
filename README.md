@@ -185,7 +185,30 @@ Full Jinja2 syntax is supported (conditionals, loops, built-in filters) via the 
 
 ### Hooks
 
-Hooks run shell commands at lifecycle points. Pre-hooks are blocking (abort on failure), post-hooks log errors but continue.
+Hooks run shell commands at lifecycle points, following worktrunk's pipeline model:
+
+- **Pre-hooks** are blocking and sequential. Failure aborts the operation.
+- **Post-hooks** run in the background. Errors are logged but don't abort.
+- **Named hooks** (map form) run in parallel within a step.
+- **Pipeline hooks** (list-of-maps) run steps sequentially, with parallel commands within each step.
+
+```toml
+# Single command
+[hooks]
+post-start = "npm install"
+
+# Named commands run in parallel
+[hooks.pre-merge]
+test = "cargo test"
+lint = "cargo clippy"
+
+# Ordered pipeline: steps sequential, commands within each step parallel
+[hooks]
+post-start = [
+    { install = "npm install" },
+    { build = "npm run build", lint = "npm run lint" }
+]
+```
 
 | Hook | When | Blocking |
 |------|------|----------|

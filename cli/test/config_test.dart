@@ -52,27 +52,50 @@ deploy = "make deploy"
       expect(config.aliases, isEmpty);
     });
 
-    test('parses simple hook', () {
+    test('parses simple hook as single-step pipeline', () {
       final config = parseToml('''
 [hooks]
 post-start = "npm install"
 ''');
       expect(config.hooks, contains('post-start'));
-      expect(config.hooks['post-start'], hasLength(1));
-      expect(config.hooks['post-start']!.first.command, equals('npm install'));
+      final pipeline = config.hooks['post-start']!;
+      expect(pipeline, hasLength(1));
+      expect(pipeline[0], hasLength(1));
+      expect(pipeline[0][0].command, equals('npm install'));
     });
 
-    test('parses named hooks', () {
+    test('parses named hooks as one step with parallel commands', () {
       final config = parseToml('''
 [hooks.pre-merge]
 test = "cargo test"
 lint = "cargo clippy"
 ''');
-      expect(config.hooks['pre-merge'], hasLength(2));
-      expect(config.hooks['pre-merge']![0].name, equals('test'));
-      expect(config.hooks['pre-merge']![0].command, equals('cargo test'));
-      expect(config.hooks['pre-merge']![1].name, equals('lint'));
-      expect(config.hooks['pre-merge']![1].command, equals('cargo clippy'));
+      final pipeline = config.hooks['pre-merge']!;
+      // One step with two parallel commands.
+      expect(pipeline, hasLength(1));
+      expect(pipeline[0], hasLength(2));
+      expect(pipeline[0][0].name, equals('test'));
+      expect(pipeline[0][0].command, equals('cargo test'));
+      expect(pipeline[0][1].name, equals('lint'));
+      expect(pipeline[0][1].command, equals('cargo clippy'));
+    });
+
+    test('parses list-of-maps as ordered pipeline', () {
+      // TOML inline tables in an array.
+      final config = parseToml('''
+[hooks]
+post-start = [{install = "npm install"}, {build = "npm run build", lint = "npm run lint"}]
+''');
+      final pipeline = config.hooks['post-start']!;
+      // Two sequential steps.
+      expect(pipeline, hasLength(2));
+      // Step 1: one command.
+      expect(pipeline[0], hasLength(1));
+      expect(pipeline[0][0].command, equals('npm install'));
+      // Step 2: two parallel commands.
+      expect(pipeline[1], hasLength(2));
+      expect(pipeline[1][0].name, equals('build'));
+      expect(pipeline[1][1].name, equals('lint'));
     });
 
     test('parses mixed hook styles', () {
@@ -151,17 +174,20 @@ squash = false
       expect(merged.merge.rebase, isTrue);
     });
 
-    test('hooks from override replace same type', () {
+    test('hooks from same type are appended', () {
       final base = parseToml('''
 [hooks]
 post-start = "npm install"
 ''');
       final override = parseToml('''
 [hooks]
-post-start = "yarn install"
+post-start = "djo copy-ignored --from default"
 ''');
       final merged = mergeConfigs(base, override);
-      expect(merged.hooks['post-start']!.first.command, equals('yarn install'));
+      final pipeline = merged.hooks['post-start']!;
+      expect(pipeline, hasLength(2));
+      expect(pipeline[0][0].command, equals('npm install'));
+      expect(pipeline[1][0].command, equals('djo copy-ignored --from default'));
     });
 
     test('hooks from different types are preserved', () {

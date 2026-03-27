@@ -14,6 +14,10 @@ Avoid the null check operator (`!`) except in deserialization code. Use proper n
 
 Keep compatibility with worktrunk's **configuration files** (`.config/wt.toml` format, TOML key names, Jinja template syntax), but don't copy worktrunk's CLI flags or command structure. dojjo should have its own ergonomics suited to jj's workflow. When adding flags or commands, choose names that are descriptive in dojjo's context. When parsing config, match worktrunk's TOML keys and template syntax exactly.
 
+## Testing
+
+Always add tests covering new functionality or fixes for defects.
+
 ## Build
 
 The CLI lives in `cli/`. It's a Dart project compiled to a native binary.

@@ -23,16 +23,20 @@ sealed class ListConfig with _$ListConfig {
   const factory ListConfig({@Default('') String url}) = _ListConfig;
 }
 
-/// A single hook: a named command string.
-/// When parsed from a simple string like `post-start = "npm install"`,
-/// the name defaults to the hook type itself.
+/// A single hook command with a name.
 @freezed
 sealed class HookEntry with _$HookEntry {
   const factory HookEntry({required String name, required String command}) = _HookEntry;
 }
 
-/// Map from hook type (e.g. "pre-merge") to its entries.
-typedef HookMap = Map<String, List<HookEntry>>;
+/// A pipeline step: a list of commands that run in parallel.
+/// A hook pipeline is a list of steps that run sequentially.
+/// Within each step, all commands run in parallel.
+typedef HookStep = List<HookEntry>;
+typedef HookPipeline = List<HookStep>;
+
+/// Map from hook type (e.g. "pre-merge") to its pipeline.
+typedef HookMap = Map<String, HookPipeline>;
 
 @freezed
 sealed class CopyIgnoredConfig with _$CopyIgnoredConfig {
@@ -47,7 +51,7 @@ sealed class Config with _$Config {
     @Default(ListConfig()) ListConfig list,
     @Default(CopyIgnoredConfig()) CopyIgnoredConfig copyIgnored,
     @Default(<String, String>{}) Map<String, String> aliases,
-    @Default(<String, List<HookEntry>>{}) HookMap hooks,
+    @Default(<String, HookPipeline>{}) HookMap hooks,
   }) = _Config;
 }
 
@@ -58,17 +62,31 @@ sealed class ConfigWithSource with _$ConfigWithSource {
       _ConfigWithSource;
 }
 
+HookStep _parseHookStep(Map<String, Object?> map) =>
+    map.entries.map((e) => HookEntry(name: e.key, command: e.value as String? ?? '')).toList();
+
 HookMap _parseHooks(Map<String, Object?> hooksMap) {
-  final result = <String, List<HookEntry>>{};
+  final result = <String, HookPipeline>{};
   for (final entry in hooksMap.entries) {
     final hookType = entry.key;
     final value = entry.value;
     if (value is String) {
       // Simple form: post-start = "npm install"
-      result[hookType] = [HookEntry(name: hookType, command: value)];
+      // One step with one command.
+      result[hookType] = [
+        [HookEntry(name: hookType, command: value)],
+      ];
+    } else if (value is List) {
+      // Pipeline form: post-start = [{ install = "npm install" }, { build = "npm run build" }]
+      // Each list element is a step; commands within a step run in parallel.
+      result[hookType] = value
+          .whereType<Map<String, Object?>>()
+          .map(_parseHookStep)
+          .toList();
     } else if (value is Map<String, Object?>) {
       // Named form: [hooks.pre-merge] test = "cargo test"
-      result[hookType] = value.entries.map((e) => HookEntry(name: e.key, command: e.value as String? ?? '')).toList();
+      // One step with parallel commands.
+      result[hookType] = [_parseHookStep(value)];
     }
   }
   return result;
@@ -101,9 +119,15 @@ Config _parseToml(String content) {
 }
 
 HookMap _mergeHooks(HookMap base, HookMap override) {
-  final result = Map.of(base);
+  final result = <String, HookPipeline>{
+    for (final entry in base.entries) entry.key: [...entry.value],
+  };
   for (final entry in override.entries) {
-    result[entry.key] = entry.value;
+    result.update(
+      entry.key,
+      (existing) => [...existing, ...entry.value],
+      ifAbsent: () => entry.value,
+    );
   }
   return result;
 }

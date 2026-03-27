@@ -6,26 +6,37 @@ run = "dart pub get"
 sources = ["pubspec.yaml"]
 outputs = [".dart_tool/package_config.json"]
 
+[tasks.deps]
+run = "dart pub get && touch .dart_tool/package_config.json"
+sources = ["pubspec.yaml"]
+outputs = [".dart_tool/package_config.json"]
+
 [tasks.generate]
 description = "Run build_runner code generation (pass 'watch' to watch for changes)"
+depends = ["deps"]
 run = "dart run build_runner {{arg(name='mode', default='build')}} --delete-conflicting-outputs"
 
 [tasks.build]
 description = "Compile native binary"
+depends = ["deps"]
 run = "dart compile exe bin/djo.dart -o build/djo"
 
 [tasks.compile]
 description = "Check compilation"
+depends = ["deps"]
 run = "dart compile kernel bin/djo.dart -o /dev/null"
 
 [tasks.test]
 description = "Run tests"
+depends = ["deps"]
 run = "dart test"
 
 [tasks.analyze]
 description = "Run static analysis"
+depends = ["deps"]
 run = "dart analyze --fatal-infos"
 
 [tasks.format-check]
 description = "Check formatting"
+depends = ["deps"]
 run = "dart format --output=none --set-exit-if-changed ."
