@@ -14,9 +14,13 @@ jobs:
       run:
         working-directory: cli
     steps:
-      - uses: actions/checkout@v4
-      - uses: jdx/mise-action@v2
+      - uses: actions/checkout@v6
+      - uses: jdx/mise-action@v4
+        with:
+          working_directory: cli
+      - run: dart pub get
       - run: mise run format-check
+      - run: mise run generate
       - run: mise run analyze
       - run: mise run test
       - run: mise run build
@@ -38,8 +42,12 @@ jobs:
       run:
         working-directory: cli
     steps:
-      - uses: actions/checkout@v4
-      - uses: jdx/mise-action@v2
+      - uses: actions/checkout@v6
+      - uses: jdx/mise-action@v4
+        with:
+          working_directory: cli
+      - run: dart pub get
+      - run: mise run generate
       - run: mise run build
       - name: Rename binary
         shell: bash

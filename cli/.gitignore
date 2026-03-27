@@ -1,5 +1,6 @@
 .dart_tool
-build
+build/*
+!build/.keep
 
 
 *.freezed.dart

@@ -152,8 +152,7 @@ class CopyIgnoredCommand extends Command<void> {
 
     final result = await Process.run('jj', ['file', 'list'], workingDirectory: workspacePath);
     if (result.exitCode != 0) return [];
-    final tracked =
-        const LineSplitter().convert(result.stdout as String).where((line) => line.isNotEmpty).toSet();
+    final tracked = const LineSplitter().convert(result.stdout as String).where((line) => line.isNotEmpty).toSet();
 
     return allFiles.where((file) => !tracked.contains(file)).toList();
   }

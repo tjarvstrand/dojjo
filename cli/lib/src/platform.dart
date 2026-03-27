@@ -25,10 +25,7 @@ String get homeDirectory {
 
 /// Runs a shell command cross-platform.
 /// Uses `sh -c` on Unix and `cmd /c` on Windows.
-Future<ProcessResult> runShellCommand(
-  String command, {
-  String? workingDirectory,
-}) {
+Future<ProcessResult> runShellCommand(String command, {String? workingDirectory}) {
   if (Platform.isWindows) {
     return Process.run('cmd', ['/c', command], workingDirectory: workingDirectory);
   }

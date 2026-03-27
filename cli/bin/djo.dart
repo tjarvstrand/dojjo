@@ -38,8 +38,7 @@ Future<void> main(List<String> args) async {
 }
 
 class _DjoCommandRunner extends CommandRunner<void> {
-  _DjoCommandRunner(Config config, ConfigWithSource configWithSource)
-      : super('djo', 'Manage jj workspaces') {
+  _DjoCommandRunner(Config config, ConfigWithSource configWithSource) : super('djo', 'Manage jj workspaces') {
     argParser.addFlag('verbose', abbr: 'v', defaultsTo: false);
     addCommand(CompletionCommand());
     addCommand(ConfigCommand(configWithSource));

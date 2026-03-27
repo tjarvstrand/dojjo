@@ -52,12 +52,12 @@ const _evalLines = {
 };
 
 String initScript(String shell) => switch (shell) {
-      'bash' => _bash,
-      'zsh' => _zsh,
-      'fish' => _fish,
-      'pwsh' || 'powershell' => _powershell,
-      _ => 'Unsupported shell: $shell. Use bash, zsh, fish, or pwsh.',
-    };
+  'bash' => _bash,
+  'zsh' => _zsh,
+  'fish' => _fish,
+  'pwsh' || 'powershell' => _powershell,
+  _ => 'Unsupported shell: $shell. Use bash, zsh, fish, or pwsh.',
+};
 
 String defaultRcFile(String shell) {
   final home = homeDirectory;
@@ -65,12 +65,7 @@ String defaultRcFile(String shell) {
     'bash' => p.join(home, '.bashrc'),
     'zsh' => p.join(home, '.zshrc'),
     'fish' => p.join(home, '.config', 'fish', 'config.fish'),
-    'pwsh' || 'powershell' => p.join(
-        home,
-        'Documents',
-        'PowerShell',
-        'Microsoft.PowerShell_profile.ps1',
-      ),
+    'pwsh' || 'powershell' => p.join(home, 'Documents', 'PowerShell', 'Microsoft.PowerShell_profile.ps1'),
     _ => throw ArgumentError('Unsupported shell: $shell'),
   };
 }
