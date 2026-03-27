@@ -6,6 +6,7 @@ import 'package:dojjo/src/config.dart';
 import 'package:dojjo/src/hooks.dart' as hooks;
 import 'package:dojjo/src/jj.dart' as jj;
 import 'package:dojjo/src/prompt.dart' as prompt;
+import 'package:path/path.dart' as p;
 
 class MergeCommand extends Command<void> {
   MergeCommand(this._config) {
@@ -68,10 +69,11 @@ class MergeCommand extends Command<void> {
       await _step('push', () => jj.gitPush(bookmark: target));
     }
 
-    stdout.writeln('$root/..');
+    final parentDir = p.dirname(root);
+    stdout.writeln(parentDir);
 
     if (!skipHooks) {
-      await hooks.runHooks('post-merge', hooks: _config.hooks, name: target, path: '$root/..');
+      await hooks.runHooks('post-merge', hooks: _config.hooks, name: target, path: parentDir);
     }
   }
 }
