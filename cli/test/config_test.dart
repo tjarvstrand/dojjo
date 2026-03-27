@@ -52,6 +52,42 @@ deploy = "make deploy"
       expect(config.aliases, isEmpty);
     });
 
+    test('parses simple hook', () {
+      final config = parseToml('''
+[hooks]
+post-start = "npm install"
+''');
+      expect(config.hooks, contains('post-start'));
+      expect(config.hooks['post-start'], hasLength(1));
+      expect(config.hooks['post-start']!.first.command, equals('npm install'));
+    });
+
+    test('parses named hooks', () {
+      final config = parseToml('''
+[hooks.pre-merge]
+test = "cargo test"
+lint = "cargo clippy"
+''');
+      expect(config.hooks['pre-merge'], hasLength(2));
+      expect(config.hooks['pre-merge']![0].name, equals('test'));
+      expect(config.hooks['pre-merge']![0].command, equals('cargo test'));
+      expect(config.hooks['pre-merge']![1].name, equals('lint'));
+      expect(config.hooks['pre-merge']![1].command, equals('cargo clippy'));
+    });
+
+    test('parses mixed hook styles', () {
+      final config = parseToml('''
+[hooks]
+post-start = "npm install"
+
+[hooks.pre-merge]
+test = "cargo test"
+''');
+      expect(config.hooks, hasLength(2));
+      expect(config.hooks['post-start'], hasLength(1));
+      expect(config.hooks['pre-merge'], hasLength(1));
+    });
+
     test('ignores unknown keys gracefully', () {
       // worktrunk-only keys should not cause errors
       final config = parseToml('''
@@ -113,6 +149,34 @@ squash = false
       expect(merged.merge.squash, isFalse);
       // rebase uses override's default (true)
       expect(merged.merge.rebase, isTrue);
+    });
+
+    test('hooks from override replace same type', () {
+      final base = parseToml('''
+[hooks]
+post-start = "npm install"
+''');
+      final override = parseToml('''
+[hooks]
+post-start = "yarn install"
+''');
+      final merged = mergeConfigs(base, override);
+      expect(merged.hooks['post-start']!.first.command, equals('yarn install'));
+    });
+
+    test('hooks from different types are preserved', () {
+      final base = parseToml('''
+[hooks]
+post-start = "npm install"
+''');
+      final override = parseToml('''
+[hooks.pre-merge]
+test = "cargo test"
+''');
+      final merged = mergeConfigs(base, override);
+      expect(merged.hooks, hasLength(2));
+      expect(merged.hooks, contains('post-start'));
+      expect(merged.hooks, contains('pre-merge'));
     });
   });
 }

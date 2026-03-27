@@ -215,7 +215,7 @@ Worktrunk-compatible where possible, with jj-specific additions:
 
 **Goal:** Automate workspace lifecycle tasks.
 
-### 5.1 Hook Types
+### 5.1 Hook Types ✅
 Adapt worktrunk's 10 hooks, dropping git-specific ones:
 
 | Hook | Blocking? | When |
@@ -229,7 +229,7 @@ Adapt worktrunk's 10 hooks, dropping git-specific ones:
 | `pre-remove` | No | Before workspace removal |
 | `post-remove` | No | After workspace removal |
 
-### 5.2 Hook Configuration
+### 5.2 Hook Configuration ✅
 ```toml
 # In .config/djo.toml or ~/.config/dojjo/config.toml
 [hooks]
@@ -240,13 +240,13 @@ test = "cargo test"
 lint = "cargo clippy"
 ```
 
-### 5.3 Hook Execution
+### 5.3 Hook Execution ✅
 - Pre-hooks: blocking, abort on failure
-- Post-hooks: background execution, output logged
-- `--no-verify` flag to skip hooks
+- Post-hooks: run sequentially, log errors but continue
+- `--skip-hooks` flag to skip hooks on switch, merge, remove
 - `djo hook <type>` for manual execution
 
-### 5.4 Hook Template Variables
+### 5.4 Hook Template Variables ✅
 - `{{ name }}` — workspace name
 - `{{ path }}` — workspace path
 - `{{ bookmark }}` — associated bookmark

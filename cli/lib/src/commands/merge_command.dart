@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 
 import 'package:dojjo/src/config.dart';
+import 'package:dojjo/src/hooks.dart' as hooks;
 import 'package:dojjo/src/jj.dart' as jj;
 import 'package:dojjo/src/prompt.dart' as prompt;
 
@@ -10,7 +11,8 @@ class MergeCommand extends Command<void> {
   MergeCommand(this._config) {
     argParser
       ..addFlag('yes', abbr: 'y', defaultsTo: false)
-      ..addFlag('push', defaultsTo: false, help: 'Push target bookmark after merge');
+      ..addFlag('push', defaultsTo: false, help: 'Push target bookmark after merge')
+      ..addFlag('skip-hooks', defaultsTo: false, help: 'Skip hooks');
   }
 
   final Config _config;
@@ -38,6 +40,7 @@ class MergeCommand extends Command<void> {
   @override
   Future<void> run() async {
     final yes = argResults!.flag('yes');
+    final skipHooks = argResults!.flag('skip-hooks');
     final rest = argResults!.rest;
     if (rest.isEmpty) {
       usageException('Missing required argument: <target>');
@@ -49,6 +52,15 @@ class MergeCommand extends Command<void> {
       "Will squash, rebase onto '$target', move bookmark, and delete $root",
     );
     await prompt.confirmOrAbort('Proceed?', yes: yes);
+
+    if (!skipHooks) {
+      await hooks.runHooks(
+        'pre-merge',
+        hooks: _config.hooks,
+        name: target,
+        path: root,
+      );
+    }
 
     if (_config.merge.squash) {
       await _step('squash', jj.squash);
@@ -68,5 +80,14 @@ class MergeCommand extends Command<void> {
     }
 
     stdout.writeln('$root/..');
+
+    if (!skipHooks) {
+      await hooks.runHooks(
+        'post-merge',
+        hooks: _config.hooks,
+        name: target,
+        path: '$root/..',
+      );
+    }
   }
 }

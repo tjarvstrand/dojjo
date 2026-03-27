@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 
 import 'package:dojjo/src/config.dart';
+import 'package:dojjo/src/hooks.dart' as hooks;
 import 'package:dojjo/src/jj.dart' as jj;
 import 'package:dojjo/src/prompt.dart' as prompt;
 import 'package:dojjo/src/state.dart' as state;
@@ -12,6 +13,7 @@ class SwitchCommand extends Command<void> {
   SwitchCommand(this._config) {
     argParser
       ..addFlag('create', abbr: 'c', defaultsTo: false)
+      ..addFlag('skip-hooks', defaultsTo: false, help: 'Skip hooks')
       ..addOption('base', abbr: 'b', help: 'Base revision for new workspace')
       ..addOption(
         'execute',
@@ -113,6 +115,16 @@ class SwitchCommand extends Command<void> {
     return lines[index - 1];
   }
 
+  Future<void> _runHook(String hookType, String name, String path) async {
+    if (argResults!.flag('skip-hooks')) return;
+    await hooks.runHooks(
+      hookType,
+      hooks: _config.hooks,
+      name: name,
+      path: path,
+    );
+  }
+
   @override
   Future<void> run() async {
     final create = argResults!.flag('create');
@@ -153,8 +165,12 @@ class SwitchCommand extends Command<void> {
 
     String path;
     if (create) {
+      await _runHook('pre-start', name, '.');
       path = await _createWorkspace(name, revision: base);
+      stdout.writeln(path);
+      await _runHook('post-start', name, path);
     } else {
+      await _runHook('pre-switch', name, '.');
       try {
         path = await jj.workspaceRoot(name);
       } on jj.CommandError {
@@ -163,11 +179,20 @@ class SwitchCommand extends Command<void> {
         if (!confirmed) {
           throw Exception('Aborted');
         }
+        await _runHook('pre-start', name, '.');
         path = await _createWorkspace(name, revision: base);
-      }
-    }
+        stdout.writeln(path);
+        await _runHook('post-start', name, path);
+        await _runHook('post-switch', name, path);
 
-    stdout.writeln(path);
+        if (execute != null) {
+          await _executeInWorkspace(execute, path);
+        }
+        return;
+      }
+      stdout.writeln(path);
+      await _runHook('post-switch', name, path);
+    }
 
     if (execute != null) {
       await _executeInWorkspace(execute, path);

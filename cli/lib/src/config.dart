@@ -24,6 +24,20 @@ sealed class ListConfig with _$ListConfig {
   }) = _ListConfig;
 }
 
+/// A single hook: a named command string.
+/// When parsed from a simple string like `post-start = "npm install"`,
+/// the name defaults to the hook type itself.
+@freezed
+sealed class HookEntry with _$HookEntry {
+  const factory HookEntry({
+    required String name,
+    required String command,
+  }) = _HookEntry;
+}
+
+/// Map from hook type (e.g. "pre-merge") to its entries.
+typedef HookMap = Map<String, List<HookEntry>>;
+
 @freezed
 sealed class Config with _$Config {
   const factory Config({
@@ -31,6 +45,7 @@ sealed class Config with _$Config {
     @Default(MergeConfig()) MergeConfig merge,
     @Default(ListConfig()) ListConfig list,
     @Default(<String, String>{}) Map<String, String> aliases,
+    @Default(<String, List<HookEntry>>{}) HookMap hooks,
   }) = _Config;
 }
 
@@ -43,12 +58,36 @@ sealed class ConfigWithSource with _$ConfigWithSource {
   }) = _ConfigWithSource;
 }
 
+HookMap _parseHooks(Map<String, Object?> hooksMap) {
+  final result = <String, List<HookEntry>>{};
+  for (final entry in hooksMap.entries) {
+    final hookType = entry.key;
+    final value = entry.value;
+    if (value is String) {
+      // Simple form: post-start = "npm install"
+      result[hookType] = [HookEntry(name: hookType, command: value)];
+    } else if (value is Map<String, Object?>) {
+      // Named form: [hooks.pre-merge] test = "cargo test"
+      result[hookType] = value.entries
+          .map(
+            (e) => HookEntry(
+              name: e.key,
+              command: e.value as String? ?? '',
+            ),
+          )
+          .toList();
+    }
+  }
+  return result;
+}
+
 Config _parseToml(String content) {
   final doc = TomlDocument.parse(content).toMap();
 
   final mergeMap = doc['merge'] as Map<String, Object?>? ?? {};
   final listMap = doc['list'] as Map<String, Object?>? ?? {};
   final aliasMap = doc['aliases'] as Map<String, Object?>? ?? {};
+  final hooksMap = doc['hooks'] as Map<String, Object?>? ?? {};
 
   return Config(
     worktreePath: doc['worktree-path'] as String? ?? '',
@@ -65,7 +104,16 @@ Config _parseToml(String content) {
     aliases: aliasMap.map(
       (key, value) => MapEntry(key, value as String? ?? ''),
     ),
+    hooks: _parseHooks(hooksMap),
   );
+}
+
+HookMap _mergeHooks(HookMap base, HookMap override) {
+  final result = Map.of(base);
+  for (final entry in override.entries) {
+    result[entry.key] = entry.value;
+  }
+  return result;
 }
 
 Config _mergeConfigs(Config base, Config override) => Config(
@@ -77,6 +125,7 @@ Config _mergeConfigs(Config base, Config override) => Config(
         rebase: override.merge.rebase,
         remove: override.merge.remove,
         verify: override.merge.verify,
+        push: override.merge.push,
       ),
       list: ListConfig(
         url: override.list.url.isNotEmpty
@@ -84,6 +133,7 @@ Config _mergeConfigs(Config base, Config override) => Config(
             : base.list.url,
       ),
       aliases: {...base.aliases, ...override.aliases},
+      hooks: _mergeHooks(base.hooks, override.hooks),
     );
 
 Config _applyEnvOverrides(Config config) {
