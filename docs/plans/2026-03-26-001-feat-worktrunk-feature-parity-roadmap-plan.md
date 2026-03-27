@@ -276,9 +276,9 @@ lint = "cargo clippy"
 
 **Goal:** Power-user features and polish.
 
-### 7.1 Tab Completion
-- Generate shell completions (bash/zsh/fish)
-- Complete workspace names, bookmark names, shell types
+### 7.1 Tab Completion ✅
+- `djo completion <shell>` outputs completion scripts for bash/zsh/fish/pwsh
+- Completes command names, workspace names (for switch/remove/copy-ignored/hook), bookmark names (for merge), shell types (for shell/completion)
 
 ### 7.2 Divergent Change Handling ✅
 - Detect divergent changes across workspaces

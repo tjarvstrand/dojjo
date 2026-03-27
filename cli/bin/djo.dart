@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 
+import 'package:dojjo/src/commands/completion_command.dart';
 import 'package:dojjo/src/commands/config_command.dart';
 import 'package:dojjo/src/commands/copy_ignored_command.dart';
 import 'package:dojjo/src/commands/for_each_command.dart';
@@ -40,6 +41,7 @@ class _DjoCommandRunner extends CommandRunner<void> {
   _DjoCommandRunner(Config config, ConfigWithSource configWithSource)
       : super('djo', 'Manage jj workspaces') {
     argParser.addFlag('verbose', abbr: 'v', defaultsTo: false);
+    addCommand(CompletionCommand());
     addCommand(ConfigCommand(configWithSource));
     addCommand(SwitchCommand(config));
     addCommand(MergeCommand(config));
