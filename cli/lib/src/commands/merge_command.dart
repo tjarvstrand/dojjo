@@ -49,7 +49,7 @@ class MergeCommand extends Command<void> {
     await prompt.confirmOrAbort('Proceed?', yes: yes);
 
     if (!skipHooks) {
-      await hooks.runHooks('pre-merge', hooks: _config.hooks, name: target, path: root);
+      await hooks.runHooks('pre-merge', hooks: _config.hooks, name: target, path: root, target: target);
     }
 
     if (_config.merge.squash) {
@@ -73,7 +73,7 @@ class MergeCommand extends Command<void> {
     stdout.writeln(parentDir);
 
     if (!skipHooks) {
-      await hooks.runHooks('post-merge', hooks: _config.hooks, name: target, path: parentDir);
+      await hooks.runHooks('post-merge', hooks: _config.hooks, name: target, path: parentDir, target: target);
     }
   }
 }

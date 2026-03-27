@@ -132,16 +132,44 @@ url = "echo http://localhost:{{ name | hash_port }}"
 
 Used in `worktree-path`, hook commands, aliases, and `--execute`:
 
+**Variables** available in all contexts (worktree-path, hooks, aliases, --execute):
+
 | Variable | Description |
 |----------|-------------|
-| `{{ name }}` | Workspace/bookmark name |
-| `{{ branch }}` | Alias for `name` (worktrunk compatibility) |
-| `{{ repo_path }}` | Absolute repository path |
-| `{{ repo }}` | Repository directory name |
-| `{{ name \| sanitize }}` | Filesystem-safe name (slashes become hyphens) |
-| `{{ name \| sanitize_db }}` | Database-safe name (lowercase, underscores, hash suffix) |
-| `{{ name \| hash_port }}` | Deterministic port in range 10000-19999 |
-| `{{ workspace_index }}` | Persistent integer index for the workspace (reusable after removal) |
+| `name` | Workspace/bookmark name |
+| `branch` | Alias for `name` (worktrunk compatibility) |
+| `repo_path` | Absolute repository path |
+| `repo` | Repository directory name |
+| `worktree_path` / `workspace_path` | Workspace root path |
+| `worktree_name` / `workspace_name` | Workspace directory name |
+| `cwd` | Current working directory |
+| `workspace_index` | Persistent integer index (reusable after removal) |
+
+**Additional variables** available in hooks:
+
+| Variable | Description |
+|----------|-------------|
+| `commit` | Current commit SHA |
+| `short_commit` | Current commit SHA (7 chars) |
+| `upstream` | Bookmark upstream (e.g. `name@origin`) |
+| `default_branch` | Default branch/trunk name |
+| `primary_worktree_path` / `primary_workspace_path` | Default workspace root path |
+| `remote` | Primary remote name |
+| `remote_url` | Primary remote URL |
+| `target` | Merge target name (merge hooks only) |
+| `target_worktree_path` / `target_workspace_path` | Merge target workspace path (merge hooks only) |
+| `base` | Base branch (alias for default_branch) |
+| `base_worktree_path` / `base_workspace_path` | Base workspace path |
+| `hook_type` | Hook type (e.g. `pre-merge`) |
+| `hook_name` | Hook command name |
+
+**Filters** that can be applied to any string variable (e.g. `{{ name | sanitize }}`):
+
+| Filter | Description |
+|--------|-------------|
+| `sanitize` | Filesystem-safe (slashes become hyphens) |
+| `sanitize_db` | Database-safe (lowercase, underscores, hash suffix) |
+| `hash_port` | Deterministic port in range 10000-19999 |
 
 Full Jinja2 syntax is supported (conditionals, loops, built-in filters) via the [jinja](https://pub.dev/packages/jinja) package for compatibility with worktrunk's minijinja templates.
 

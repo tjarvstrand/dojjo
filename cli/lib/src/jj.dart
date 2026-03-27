@@ -117,6 +117,11 @@ Future<String> gitPush({String? bookmark, bool all = false}) => _run([
   if (bookmark != null && !all) ...['--bookmark', bookmark],
 ]);
 
+Future<String> logTemplate(String revset, String template) =>
+    _run(['log', '-r', revset, '--no-graph', '-T', template]);
+
+Future<String> gitRemoteList() => _run(['git', 'remote', 'list']);
+
 Future<String> squash() => _run(['squash']);
 
 Future<String> rebase(String destination) => _run(['rebase', '-d', destination]);

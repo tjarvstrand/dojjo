@@ -26,16 +26,24 @@ Future<void> runHooks(
   required String name,
   required String path,
   int? workspaceIndex,
+  String? target,
 }) async {
   final entries = hooks[hookType];
   if (entries == null || entries.isEmpty) return;
 
   final isBlocking = hookType.startsWith('pre-');
 
+  final context = await buildFullContext(
+    name: name,
+    path: path,
+    workspaceIndex: workspaceIndex,
+    hookType: hookType,
+    target: target,
+  );
+
   for (final entry in entries) {
-    final rendered = rewriteWorktrunkCommands(
-      renderTemplate(entry.command, name: name, repoPath: path, workspaceIndex: workspaceIndex),
-    );
+    context['hook_name'] = entry.name;
+    final rendered = rewriteWorktrunkCommands(render(entry.command, context));
 
     stderr.writeln('hook($hookType/${entry.name}): $rendered');
 
