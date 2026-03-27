@@ -25,3 +25,7 @@ run = "dart test"
 [tasks.analyze]
 description = "Run static analysis"
 run = "dart analyze --fatal-infos"
+
+[tasks.format-check]
+description = "Check formatting"
+run = "dart format --output=none --set-exit-if-changed ."
