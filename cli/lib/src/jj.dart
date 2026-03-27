@@ -121,6 +121,16 @@ Future<String> squash() => _run(['squash']);
 
 Future<String> rebase(String destination) => _run(['rebase', '-d', destination]);
 
+/// Returns true if the given revset matches any commits.
+Future<bool> revsetMatches(String revset) async {
+  try {
+    final output = await _run(['log', '-r', revset, '--no-graph', '-T', 'empty']);
+    return output.isNotEmpty;
+  } on CommandError {
+    return false;
+  }
+}
+
 Future<void> deleteDirectory(String path) async {
   final dir = Directory(path);
   if (await dir.exists()) {

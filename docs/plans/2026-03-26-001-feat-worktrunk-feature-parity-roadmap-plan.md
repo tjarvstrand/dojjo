@@ -290,12 +290,15 @@ lint = "cargo clippy"
 - Configurable provider (claude, codex, etc.)
 - Custom prompt templates
 
-### 7.4 For-Each
+### 7.4 For-Each ✅
 - `djo for-each <cmd>` — run a command in every workspace
-- Parallel execution with output aggregation
+- Template variable support in command string
+- Sequential execution with per-workspace output headers
 
-### 7.5 Prune
-- `djo prune` — remove workspaces whose bookmarks have been merged into the default bookmark
+### 7.5 Prune ✅
+- `djo prune [-y]` — remove workspaces whose bookmarks have been merged into trunk
+- Uses `ancestors(trunk())` revset to detect merged bookmarks
+- Skips current workspace, confirmation prompt before removal
 
 ### 7.6 Copy Ignored ✅
 - `djo copy-ignored <source> [target]` — copy gitignored files (build caches, `node_modules`, etc.) from one workspace to another
