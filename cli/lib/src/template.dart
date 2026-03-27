@@ -9,8 +9,8 @@ String renderTemplate(String template, {required String name, required String re
     .fromString(template)
     .render({'name': name, 'branch': name, 'repo_path': repoPath, 'repo': p.basename(repoPath)});
 
-/// Filesystem-safe name: replace slashes with hyphens.
-String sanitize(String value) => value.replaceAll('/', '-');
+/// Filesystem-safe name: replace path separators with hyphens.
+String sanitize(String value) => value.replaceAll(RegExp(r'[/\\]'), '-');
 
 /// Deterministic port in range 10000-19999 based on string hash.
 int hashPort(String value) {

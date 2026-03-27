@@ -280,10 +280,10 @@ lint = "cargo clippy"
 - Generate shell completions (bash/zsh/fish)
 - Complete workspace names, bookmark names, shell types
 
-### 7.2 Divergent Change Handling
+### 7.2 Divergent Change Handling ✅
 - Detect divergent changes across workspaces
-- Warn in `djo list` output
-- `djo resolve` command or guidance for fixing divergence
+- `↕` indicator in `djo list` output
+- No separate resolve command — jj's own tools handle resolution
 
 ### 7.3 LLM Commit Messages
 - `djo commit` command with LLM integration for message generation

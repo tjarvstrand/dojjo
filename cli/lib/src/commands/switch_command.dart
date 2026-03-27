@@ -5,9 +5,11 @@ import 'package:args/command_runner.dart';
 import 'package:dojjo/src/config.dart';
 import 'package:dojjo/src/hooks.dart' as hooks;
 import 'package:dojjo/src/jj.dart' as jj;
+import 'package:dojjo/src/platform.dart';
 import 'package:dojjo/src/prompt.dart' as prompt;
 import 'package:dojjo/src/state.dart' as state;
 import 'package:dojjo/src/template.dart';
+import 'package:path/path.dart' as p;
 
 class SwitchCommand extends Command<void> {
   SwitchCommand(this._config) {
@@ -30,7 +32,7 @@ class SwitchCommand extends Command<void> {
     final root = await jj.workspaceRoot();
     final path = _config.worktreePath.isNotEmpty
         ? renderTemplate(_config.worktreePath, name: name, repoPath: root)
-        : '$root/../$name';
+        : p.join(root, '..', name);
     await jj.workspaceAdd(path, name: name, revision: revision);
     await jj.bookmarkCreate(name);
     try {
@@ -42,8 +44,8 @@ class SwitchCommand extends Command<void> {
   }
 
   Future<void> _executeInWorkspace(String command, String path) async {
-    final rendered = renderTemplate(command, name: path.split('/').last, repoPath: path);
-    final result = await Process.run('sh', ['-c', rendered], workingDirectory: path);
+    final rendered = renderTemplate(command, name: p.basename(path), repoPath: path);
+    final result = await runShellCommand(rendered, workingDirectory: path);
     final output = (result.stdout as String).trim();
     if (output.isNotEmpty) {
       stderr.writeln(output);

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dojjo/src/config.dart';
+import 'package:dojjo/src/platform.dart';
 import 'package:dojjo/src/template.dart';
 
 final _wtStepPattern = RegExp(r'\bwt\s+step\s+');
@@ -36,7 +37,7 @@ Future<void> runHooks(
 
     stderr.writeln('hook($hookType/${entry.name}): $rendered');
 
-    final result = await Process.run('sh', ['-c', rendered], workingDirectory: path);
+    final result = await runShellCommand(rendered, workingDirectory: path);
 
     final output = (result.stdout as String).trim();
     if (output.isNotEmpty) {

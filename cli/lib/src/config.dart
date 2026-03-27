@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dojjo/src/platform.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:path/path.dart' as p;
 import 'package:toml/toml.dart';
@@ -152,12 +153,12 @@ Future<Config?> _tryLoadFile(String path) async {
 /// Load config from all sources, merged in precedence order.
 /// Returns the effective config and the list of files that were loaded.
 Future<ConfigWithSource> loadConfig({String? projectRoot}) async {
-  final home = Platform.environment['HOME'] ?? '';
+  final home = homeDirectory;
   final root = projectRoot ?? Directory.current.path;
 
   final paths = [
-    ('$home/.config/worktrunk/config.toml', 'worktrunk user'),
-    ('$home/.config/dojjo/config.toml', 'dojjo user'),
+    (p.join(home, '.config', 'worktrunk', 'config.toml'), 'worktrunk user'),
+    (p.join(home, '.config', 'dojjo', 'config.toml'), 'dojjo user'),
     (p.join(root, '.config', 'wt.toml'), 'worktrunk project'),
     (p.join(root, '.config', 'djo.toml'), 'dojjo project'),
   ];

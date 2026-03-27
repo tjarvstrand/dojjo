@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -123,7 +124,7 @@ class CopyIgnoredCommand extends Command<void> {
   Set<String> _topLevelEntries(List<String> paths) {
     final entries = <String>{};
     for (final path in paths) {
-      entries.add(path.split('/').first);
+      entries.add(p.split(path).first);
     }
     return entries;
   }
@@ -139,8 +140,8 @@ class CopyIgnoredCommand extends Command<void> {
     final file = File(p.join(workspacePath, '.worktreeinclude'));
     if (!await file.exists()) return null;
     final content = await file.readAsString();
-    return content
-        .split('\n')
+    return const LineSplitter()
+        .convert(content)
         .map((line) => line.trim())
         .where((line) => line.isNotEmpty && !line.startsWith('#'))
         .toList();
@@ -151,7 +152,8 @@ class CopyIgnoredCommand extends Command<void> {
 
     final result = await Process.run('jj', ['file', 'list'], workingDirectory: workspacePath);
     if (result.exitCode != 0) return [];
-    final tracked = (result.stdout as String).split('\n').where((line) => line.isNotEmpty).toSet();
+    final tracked =
+        const LineSplitter().convert(result.stdout as String).where((line) => line.isNotEmpty).toSet();
 
     return allFiles.where((file) => !tracked.contains(file)).toList();
   }
@@ -162,7 +164,7 @@ class CopyIgnoredCommand extends Command<void> {
     final excludes = _allExcludes();
     await for (final entity in dir.list()) {
       final relative = p.relative(entity.path, from: root);
-      final topLevel = relative.split('/').first;
+      final topLevel = p.split(relative).first;
       if (excludes.contains(topLevel)) continue;
       if (entity is File) {
         result.add(relative);
@@ -176,12 +178,19 @@ class CopyIgnoredCommand extends Command<void> {
   Future<void> _copy(String source, String target) async {
     await Directory(p.dirname(target)).create(recursive: true);
 
-    final args = ['-R', if (Platform.isMacOS) '-c', source, target];
-
-    final result = await Process.run('cp', args);
-    if (result.exitCode != 0) {
-      final error = (result.stderr as String).trim();
-      stderr.writeln('Failed to copy $source: $error');
+    final ProcessResult result;
+    if (Platform.isWindows) {
+      // robocopy uses exit code 1 for success with files copied.
+      result = await Process.run('robocopy', [source, target, '/E', '/NFL', '/NDL', '/NJH', '/NJS']);
+      if (result.exitCode > 7) {
+        stderr.writeln('Failed to copy $source: ${(result.stderr as String).trim()}');
+      }
+    } else {
+      final args = ['-R', if (Platform.isMacOS) '-c', source, target];
+      result = await Process.run('cp', args);
+      if (result.exitCode != 0) {
+        stderr.writeln('Failed to copy $source: ${(result.stderr as String).trim()}');
+      }
     }
   }
 }

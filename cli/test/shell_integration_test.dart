@@ -20,8 +20,20 @@ void main() {
       expect(script, contains('switch merge'));
     });
 
+    test('returns powershell script for pwsh', () {
+      final script = initScript('pwsh');
+      expect(script, contains('function djo'));
+      expect(script, contains('Set-Location'));
+      expect(script, contains('switch'));
+      expect(script, contains('merge'));
+    });
+
+    test('powershell alias works', () {
+      expect(initScript('powershell'), equals(initScript('pwsh')));
+    });
+
     test('returns error for unknown shell', () {
-      expect(initScript('powershell'), contains('Unsupported shell'));
+      expect(initScript('ksh'), contains('Unsupported shell'));
     });
 
     test('bash script wraps switch and merge with cd', () {
@@ -43,19 +55,23 @@ void main() {
 
   group('defaultRcFile', () {
     test('returns .bashrc for bash', () {
-      expect(defaultRcFile('bash'), endsWith('/.bashrc'));
+      expect(defaultRcFile('bash'), endsWith('.bashrc'));
     });
 
     test('returns .zshrc for zsh', () {
-      expect(defaultRcFile('zsh'), endsWith('/.zshrc'));
+      expect(defaultRcFile('zsh'), endsWith('.zshrc'));
     });
 
     test('returns config.fish for fish', () {
-      expect(defaultRcFile('fish'), endsWith('/.config/fish/config.fish'));
+      expect(defaultRcFile('fish'), endsWith('config.fish'));
+    });
+
+    test('returns PowerShell profile for pwsh', () {
+      expect(defaultRcFile('pwsh'), endsWith('Microsoft.PowerShell_profile.ps1'));
     });
 
     test('throws for unknown shell', () {
-      expect(() => defaultRcFile('powershell'), throwsA(isA<ArgumentError>()));
+      expect(() => defaultRcFile('ksh'), throwsA(isA<ArgumentError>()));
     });
   });
 }

@@ -1,5 +1,8 @@
 import 'dart:io';
 
+import 'package:dojjo/src/platform.dart';
+import 'package:path/path.dart' as p;
+
 const _bash = r'''djo() {
   case "$1" in
     switch|merge)
@@ -29,43 +32,53 @@ const _fish = r'''function djo
   end
 end''';
 
+const _powershell = r'''function djo {
+  $djoBin = (Get-Command djo.exe).Source
+  if ($args[0] -in @("switch", "merge")) {
+    $output = & $djoBin @args
+    if ($LASTEXITCODE -eq 0 -and $output) {
+      Set-Location $output
+    }
+  } else {
+    & $djoBin @args
+  }
+}''';
+
 const _evalLines = {
   'bash': r'eval "$(djo shell init bash)"',
   'zsh': r'eval "$(djo shell init zsh)"',
   'fish': 'djo shell init fish | source',
+  'pwsh': '. (djo shell init pwsh | Out-String)',
 };
 
-String initScript(String shell) {
-  switch (shell) {
-    case 'bash':
-      return _bash;
-    case 'zsh':
-      return _zsh;
-    case 'fish':
-      return _fish;
-    default:
-      return 'Unsupported shell: $shell. Use bash, zsh, or fish.';
-  }
-}
+String initScript(String shell) => switch (shell) {
+      'bash' => _bash,
+      'zsh' => _zsh,
+      'fish' => _fish,
+      'pwsh' || 'powershell' => _powershell,
+      _ => 'Unsupported shell: $shell. Use bash, zsh, fish, or pwsh.',
+    };
 
 String defaultRcFile(String shell) {
-  final home = Platform.environment['HOME'] ?? '';
-  switch (shell) {
-    case 'bash':
-      return '$home/.bashrc';
-    case 'zsh':
-      return '$home/.zshrc';
-    case 'fish':
-      return '$home/.config/fish/config.fish';
-    default:
-      throw ArgumentError('Unsupported shell: $shell');
-  }
+  final home = homeDirectory;
+  return switch (shell) {
+    'bash' => p.join(home, '.bashrc'),
+    'zsh' => p.join(home, '.zshrc'),
+    'fish' => p.join(home, '.config', 'fish', 'config.fish'),
+    'pwsh' || 'powershell' => p.join(
+        home,
+        'Documents',
+        'PowerShell',
+        'Microsoft.PowerShell_profile.ps1',
+      ),
+    _ => throw ArgumentError('Unsupported shell: $shell'),
+  };
 }
 
 Future<void> install(String shell, String path) async {
   final evalLine = _evalLines[shell];
   if (evalLine == null) {
-    throw ArgumentError('Unsupported shell: $shell. Use bash, zsh, or fish.');
+    throw ArgumentError('Unsupported shell: $shell. Use bash, zsh, fish, or pwsh.');
   }
 
   final file = File(path);

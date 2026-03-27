@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -63,7 +64,7 @@ Future<String> _run(List<String> args) async {
 }
 
 List<WorkspaceInfo> parseWorkspaceList(String output) =>
-    output.split('\n').where((line) => line.isNotEmpty).map((line) {
+    const LineSplitter().convert(output).where((line) => line.isNotEmpty).map((line) {
       final parts = line.split('\t');
       return WorkspaceInfo(
         name: parts[0],
