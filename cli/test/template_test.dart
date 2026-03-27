@@ -76,10 +76,10 @@ void main() {
       expect(result, equals('/home/user/project/../feature'));
     });
 
-    test('preserves unknown variables', () {
+    test('renders unknown variables as empty string', () {
       expect(
         renderTemplate('{{ unknown }}', name: 'ws', repoPath: '/r'),
-        equals('{{ unknown }}'),
+        equals(''),
       );
     });
 

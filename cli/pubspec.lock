@@ -209,6 +209,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.2"
+  html_unescape:
+    dependency: transitive
+    description:
+      name: html_unescape
+      sha256: "15362d7a18f19d7b742ef8dcb811f5fd2a2df98db9f80ea393c075189e0b61e3"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
   http_multi_server:
     dependency: transitive
     description:
@@ -233,6 +241,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.5"
+  jinja:
+    dependency: "direct main"
+    description:
+      name: jinja
+      sha256: "67485c43c8551688669a81b4e01fe94f6126578ba8c194908d00f254f23f9b8b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.5"
   json_annotation:
     dependency: "direct main"
     description:
@@ -481,6 +497,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.6.17"
+  textwrap:
+    dependency: transitive
+    description:
+      name: textwrap
+      sha256: "7e79503c220a9c772d370075e0d4117204546ed4c6479ab1c9ee4d4c27add606"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.0"
   toml:
     dependency: "direct main"
     description:
