@@ -21,13 +21,9 @@ class MergeCommand extends Command<void> {
   String get name => 'merge';
 
   @override
-  String get description =>
-      'Squash, rebase onto target, move bookmark, and clean up workspace';
+  String get description => 'Squash, rebase onto target, move bookmark, and clean up workspace';
 
-  Future<void> _step(
-    String name,
-    Future<String> Function() effect,
-  ) async {
+  Future<void> _step(String name, Future<String> Function() effect) async {
     try {
       await effect();
     } on Exception catch (err) {
@@ -48,18 +44,11 @@ class MergeCommand extends Command<void> {
     final target = rest.first;
 
     final root = await jj.workspaceRoot();
-    stderr.writeln(
-      "Will squash, rebase onto '$target', move bookmark, and delete $root",
-    );
+    stderr.writeln("Will squash, rebase onto '$target', move bookmark, and delete $root");
     await prompt.confirmOrAbort('Proceed?', yes: yes);
 
     if (!skipHooks) {
-      await hooks.runHooks(
-        'pre-merge',
-        hooks: _config.hooks,
-        name: target,
-        path: root,
-      );
+      await hooks.runHooks('pre-merge', hooks: _config.hooks, name: target, path: root);
     }
 
     if (_config.merge.squash) {
@@ -82,12 +71,7 @@ class MergeCommand extends Command<void> {
     stdout.writeln('$root/..');
 
     if (!skipHooks) {
-      await hooks.runHooks(
-        'post-merge',
-        hooks: _config.hooks,
-        name: target,
-        path: '$root/..',
-      );
+      await hooks.runHooks('post-merge', hooks: _config.hooks, name: target, path: '$root/..');
     }
   }
 }

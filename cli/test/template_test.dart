@@ -4,91 +4,52 @@ import 'package:test/test.dart';
 void main() {
   group('renderTemplate', () {
     test('substitutes name', () {
-      expect(
-        renderTemplate('{{ name }}', name: 'ws1', repoPath: '/repo'),
-        equals('ws1'),
-      );
+      expect(renderTemplate('{{ name }}', name: 'ws1', repoPath: '/repo'), equals('ws1'));
     });
 
     test('substitutes branch as alias for name', () {
-      expect(
-        renderTemplate('{{ branch }}', name: 'ws1', repoPath: '/repo'),
-        equals('ws1'),
-      );
+      expect(renderTemplate('{{ branch }}', name: 'ws1', repoPath: '/repo'), equals('ws1'));
     });
 
     test('substitutes repo_path', () {
-      expect(
-        renderTemplate('{{ repo_path }}', name: 'ws1', repoPath: '/a/repo'),
-        equals('/a/repo'),
-      );
+      expect(renderTemplate('{{ repo_path }}', name: 'ws1', repoPath: '/a/repo'), equals('/a/repo'));
     });
 
     test('substitutes repo', () {
-      expect(
-        renderTemplate('{{ repo }}', name: 'ws1', repoPath: '/a/myrepo'),
-        equals('myrepo'),
-      );
+      expect(renderTemplate('{{ repo }}', name: 'ws1', repoPath: '/a/myrepo'), equals('myrepo'));
     });
 
     test('applies sanitize filter', () {
       expect(
-        renderTemplate(
-          '{{ name | sanitize }}',
-          name: 'feat/my-branch',
-          repoPath: '/repo',
-        ),
+        renderTemplate('{{ name | sanitize }}', name: 'feat/my-branch', repoPath: '/repo'),
         equals('feat-my-branch'),
       );
     });
 
     test('applies hash_port filter', () {
-      final result = renderTemplate(
-        '{{ name | hash_port }}',
-        name: 'test',
-        repoPath: '/repo',
-      );
+      final result = renderTemplate('{{ name | hash_port }}', name: 'test', repoPath: '/repo');
       final port = int.parse(result);
       expect(port, greaterThanOrEqualTo(10000));
       expect(port, lessThan(20000));
     });
 
     test('hash_port is deterministic', () {
-      final a = renderTemplate(
-        '{{ name | hash_port }}',
-        name: 'test',
-        repoPath: '/repo',
-      );
-      final b = renderTemplate(
-        '{{ name | hash_port }}',
-        name: 'test',
-        repoPath: '/repo',
-      );
+      final a = renderTemplate('{{ name | hash_port }}', name: 'test', repoPath: '/repo');
+      final b = renderTemplate('{{ name | hash_port }}', name: 'test', repoPath: '/repo');
       expect(a, equals(b));
     });
 
     test('renders full worktree-path template', () {
-      final result = renderTemplate(
-        '{{ repo_path }}/../{{ name }}',
-        name: 'feature',
-        repoPath: '/home/user/project',
-      );
+      final result = renderTemplate('{{ repo_path }}/../{{ name }}', name: 'feature', repoPath: '/home/user/project');
       expect(result, equals('/home/user/project/../feature'));
     });
 
     test('renders unknown variables as empty string', () {
-      expect(
-        renderTemplate('{{ unknown }}', name: 'ws', repoPath: '/r'),
-        equals(''),
-      );
+      expect(renderTemplate('{{ unknown }}', name: 'ws', repoPath: '/r'), equals(''));
     });
 
     test('handles multiple variables in one string', () {
-      final result = renderTemplate(
-        '{{ repo }}/{{ name }}',
-        name: 'ws1',
-        repoPath: '/a/myrepo',
-      );
+      final result = renderTemplate('{{ repo }}/{{ name }}', name: 'ws1', repoPath: '/a/myrepo');
       expect(result, equals('myrepo/ws1'));
     });
   });

@@ -65,9 +65,7 @@ String defaultRcFile(String shell) {
 Future<void> install(String shell, String path) async {
   final evalLine = _evalLines[shell];
   if (evalLine == null) {
-    throw ArgumentError(
-      'Unsupported shell: $shell. Use bash, zsh, or fish.',
-    );
+    throw ArgumentError('Unsupported shell: $shell. Use bash, zsh, or fish.');
   }
 
   final file = File(path);
@@ -83,8 +81,5 @@ Future<void> install(String shell, String path) async {
     await parent.create(recursive: true);
   }
 
-  await file.writeAsString(
-    '\n# dojjo shell integration\n$evalLine\n',
-    mode: FileMode.append,
-  );
+  await file.writeAsString('\n# dojjo shell integration\n$evalLine\n', mode: FileMode.append);
 }

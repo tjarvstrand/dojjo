@@ -35,15 +35,9 @@ class HookCommand extends Command<void> {
 
     final root = await jj.workspaceRoot();
     final workspaces = await jj.workspaceListRich();
-    final current =
-        workspaces.where((workspace) => workspace.current).firstOrNull;
+    final current = workspaces.where((workspace) => workspace.current).firstOrNull;
     final workspaceName = current?.name ?? 'default';
 
-    await hooks.runHooks(
-      hookType,
-      hooks: _config.hooks,
-      name: workspaceName,
-      path: root,
-    );
+    await hooks.runHooks(hookType, hooks: _config.hooks, name: workspaceName, path: root);
   }
 }

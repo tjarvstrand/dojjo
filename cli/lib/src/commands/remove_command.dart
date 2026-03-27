@@ -42,12 +42,7 @@ class RemoveCommand extends Command<void> {
     await prompt.confirmOrAbort('Proceed?', yes: yes);
 
     if (!skipHooks) {
-      await hooks.runHooks(
-        'pre-remove',
-        hooks: _config.hooks,
-        name: name,
-        path: root,
-      );
+      await hooks.runHooks('pre-remove', hooks: _config.hooks, name: name, path: root);
     }
 
     await jj.workspaceForget(name);
@@ -62,12 +57,7 @@ class RemoveCommand extends Command<void> {
     stderr.writeln("Removed workspace '$name'");
 
     if (!skipHooks) {
-      await hooks.runHooks(
-        'post-remove',
-        hooks: _config.hooks,
-        name: name,
-        path: root,
-      );
+      await hooks.runHooks('post-remove', hooks: _config.hooks, name: name, path: root);
     }
   }
 }

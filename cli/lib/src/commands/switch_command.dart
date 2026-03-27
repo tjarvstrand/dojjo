@@ -15,11 +15,7 @@ class SwitchCommand extends Command<void> {
       ..addFlag('create', abbr: 'c', defaultsTo: false)
       ..addFlag('skip-hooks', defaultsTo: false, help: 'Skip hooks')
       ..addOption('base', abbr: 'b', help: 'Base revision for new workspace')
-      ..addOption(
-        'execute',
-        abbr: 'x',
-        help: 'Command to run in workspace after switching',
-      );
+      ..addOption('execute', abbr: 'x', help: 'Command to run in workspace after switching');
   }
 
   final Config _config;
@@ -33,11 +29,7 @@ class SwitchCommand extends Command<void> {
   Future<String> _createWorkspace(String name, {String? revision}) async {
     final root = await jj.workspaceRoot();
     final path = _config.worktreePath.isNotEmpty
-        ? renderTemplate(
-            _config.worktreePath,
-            name: name,
-            repoPath: root,
-          )
+        ? renderTemplate(_config.worktreePath, name: name, repoPath: root)
         : '$root/../$name';
     await jj.workspaceAdd(path, name: name, revision: revision);
     await jj.bookmarkCreate(name);
@@ -50,16 +42,8 @@ class SwitchCommand extends Command<void> {
   }
 
   Future<void> _executeInWorkspace(String command, String path) async {
-    final rendered = renderTemplate(
-      command,
-      name: path.split('/').last,
-      repoPath: path,
-    );
-    final result = await Process.run(
-      'sh',
-      ['-c', rendered],
-      workingDirectory: path,
-    );
+    final rendered = renderTemplate(command, name: path.split('/').last, repoPath: path);
+    final result = await Process.run('sh', ['-c', rendered], workingDirectory: path);
     final output = (result.stdout as String).trim();
     if (output.isNotEmpty) {
       stderr.writeln(output);
@@ -77,21 +61,15 @@ class SwitchCommand extends Command<void> {
       return null;
     }
 
-    final lines =
-        workspaces.map((workspace) => workspace.name).toList();
+    final lines = workspaces.map((workspace) => workspace.name).toList();
     final input = lines.join('\n');
 
     // Try fzf first.
     try {
-      final result = await Process.start(
-        'fzf',
-        ['--prompt', 'workspace> '],
-      );
+      final result = await Process.start('fzf', ['--prompt', 'workspace> ']);
       result.stdin.write(input);
       await result.stdin.close();
-      final output = await result.stdout
-          .transform(const SystemEncoding().decoder)
-          .join();
+      final output = await result.stdout.transform(const SystemEncoding().decoder).join();
       final exitCode = await result.exitCode;
       if (exitCode == 0) {
         return output.trim();
@@ -117,12 +95,7 @@ class SwitchCommand extends Command<void> {
 
   Future<void> _runHook(String hookType, String name, String path) async {
     if (argResults!.flag('skip-hooks')) return;
-    await hooks.runHooks(
-      hookType,
-      hooks: _config.hooks,
-      name: name,
-      path: path,
-    );
+    await hooks.runHooks(hookType, hooks: _config.hooks, name: name, path: path);
   }
 
   @override
@@ -157,8 +130,7 @@ class SwitchCommand extends Command<void> {
 
     // Save current workspace as "previous" before switching.
     final workspaces = await jj.workspaceListRich();
-    final current =
-        workspaces.where((workspace) => workspace.current).firstOrNull;
+    final current = workspaces.where((workspace) => workspace.current).firstOrNull;
     if (current != null) {
       await state.savePreviousWorkspace(current.name);
     }
@@ -174,8 +146,7 @@ class SwitchCommand extends Command<void> {
       try {
         path = await jj.workspaceRoot(name);
       } on jj.CommandError {
-        final confirmed =
-            await prompt.confirm("Workspace '$name' not found. Create it?");
+        final confirmed = await prompt.confirm("Workspace '$name' not found. Create it?");
         if (!confirmed) {
           throw Exception('Aborted');
         }

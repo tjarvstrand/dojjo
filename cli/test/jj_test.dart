@@ -16,8 +16,7 @@ void main() {
 
   group('parseWorkspaceList', () {
     test('parses single workspace line', () {
-      const input =
-          'default\tuprnywsvpzrk\t\tUse zio-logging\tfalse\tfalse\tfalse\ttrue\t3';
+      const input = 'default\tuprnywsvpzrk\t\tUse zio-logging\tfalse\tfalse\tfalse\ttrue\t3';
       expect(parseWorkspaceList(input), equals([defaultWs]));
     });
 
@@ -40,8 +39,7 @@ void main() {
     });
 
     test('skips blank lines', () {
-      const input =
-          '\ndefault\tuprnywsvpzrk\t\tUse zio-logging\tfalse\tfalse\tfalse\ttrue\t3\n\n';
+      const input = '\ndefault\tuprnywsvpzrk\t\tUse zio-logging\tfalse\tfalse\tfalse\ttrue\t3\n\n';
       expect(parseWorkspaceList(input), hasLength(1));
     });
 
@@ -52,10 +50,7 @@ void main() {
 
     test('parses multiple bookmarks', () {
       const input = 'ws\tid\tmain,feature\tdesc\tfalse\tfalse\tfalse\ttrue\t0';
-      expect(
-        parseWorkspaceList(input).first.bookmarks,
-        equals('main,feature'),
-      );
+      expect(parseWorkspaceList(input).first.bookmarks, equals('main,feature'));
     });
 
     test('parses empty description', () {

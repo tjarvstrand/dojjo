@@ -297,9 +297,11 @@ lint = "cargo clippy"
 ### 7.5 Prune
 - `djo prune` — remove workspaces whose bookmarks have been merged into the default bookmark
 
-### 7.6 Copy Ignored
+### 7.6 Copy Ignored ✅
 - `djo copy-ignored <source> [target]` — copy gitignored files (build caches, `node_modules`, etc.) from one workspace to another
-- Leverage copy-on-write (APFS clonefile) where available for near-instant copies
+- Uses `cp -c` (APFS clonefile) on macOS for copy-on-write, falls back to regular copy elsewhere
+- Groups by top-level directory for efficiency
+- Excludes `.jj/` and `.git/` automatically
 - Useful in `post-start` hooks to eliminate cold build times in new workspaces
 
 ---

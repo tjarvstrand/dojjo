@@ -14,18 +14,17 @@ WorkspaceInfo ws({
   bool empty = false,
   bool current = false,
   int modifiedFiles = 0,
-}) =>
-    WorkspaceInfo(
-      name: name,
-      changeId: changeId,
-      bookmarks: bookmarks,
-      description: description,
-      conflict: conflict,
-      divergent: divergent,
-      empty: empty,
-      current: current,
-      modifiedFiles: modifiedFiles,
-    );
+}) => WorkspaceInfo(
+  name: name,
+  changeId: changeId,
+  bookmarks: bookmarks,
+  description: description,
+  conflict: conflict,
+  divergent: divergent,
+  empty: empty,
+  current: current,
+  modifiedFiles: modifiedFiles,
+);
 
 void main() {
   group('formatWorkspace', () {
@@ -54,9 +53,7 @@ void main() {
     });
 
     test('shows both conflict and divergent symbols', () {
-      final result = formatWorkspace(
-        ws(conflict: true, divergent: true),
-      );
+      final result = formatWorkspace(ws(conflict: true, divergent: true));
       expect(result, contains('\u2718'));
       expect(result, contains('\u2195'));
     });
@@ -68,24 +65,15 @@ void main() {
     });
 
     test('shows file count when not empty', () {
-      expect(
-        formatWorkspace(ws(modifiedFiles: 5)),
-        contains('(5 files)'),
-      );
+      expect(formatWorkspace(ws(modifiedFiles: 5)), contains('(5 files)'));
     });
 
     test('omits file count when empty', () {
-      expect(
-        formatWorkspace(ws(empty: true)),
-        isNot(contains('files')),
-      );
+      expect(formatWorkspace(ws(empty: true)), isNot(contains('files')));
     });
 
     test('shows description', () {
-      expect(
-        formatWorkspace(ws(description: 'Add feature')),
-        contains('Add feature'),
-      );
+      expect(formatWorkspace(ws(description: 'Add feature')), contains('Add feature'));
     });
 
     test('full format example', () {
@@ -126,8 +114,7 @@ void main() {
           modifiedFiles: 42,
         ),
       ]);
-      final parsed =
-          (jsonDecode(json) as List<Object?>).first! as Map<String, Object?>;
+      final parsed = (jsonDecode(json) as List<Object?>).first! as Map<String, Object?>;
       expect(parsed['name'], equals('ws'));
       expect(parsed['changeId'], equals('id'));
       expect(parsed['bookmarks'], equals('bm'));
@@ -146,8 +133,7 @@ void main() {
     test('escapes special characters in description', () {
       final json = workspaceListJson([ws(description: 'say "hello"')]);
       // Should be valid JSON
-      final parsed =
-          (jsonDecode(json) as List<Object?>).first! as Map<String, Object?>;
+      final parsed = (jsonDecode(json) as List<Object?>).first! as Map<String, Object?>;
       expect(parsed['description'], equals('say "hello"'));
     });
   });

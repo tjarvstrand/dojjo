@@ -19,9 +19,7 @@ sealed class MergeConfig with _$MergeConfig {
 
 @freezed
 sealed class ListConfig with _$ListConfig {
-  const factory ListConfig({
-    @Default('') String url,
-  }) = _ListConfig;
+  const factory ListConfig({@Default('') String url}) = _ListConfig;
 }
 
 /// A single hook: a named command string.
@@ -29,14 +27,16 @@ sealed class ListConfig with _$ListConfig {
 /// the name defaults to the hook type itself.
 @freezed
 sealed class HookEntry with _$HookEntry {
-  const factory HookEntry({
-    required String name,
-    required String command,
-  }) = _HookEntry;
+  const factory HookEntry({required String name, required String command}) = _HookEntry;
 }
 
 /// Map from hook type (e.g. "pre-merge") to its entries.
 typedef HookMap = Map<String, List<HookEntry>>;
+
+@freezed
+sealed class CopyIgnoredConfig with _$CopyIgnoredConfig {
+  const factory CopyIgnoredConfig({@Default(<String>[]) List<String> exclude}) = _CopyIgnoredConfig;
+}
 
 @freezed
 sealed class Config with _$Config {
@@ -44,6 +44,7 @@ sealed class Config with _$Config {
     @Default('') String worktreePath,
     @Default(MergeConfig()) MergeConfig merge,
     @Default(ListConfig()) ListConfig list,
+    @Default(CopyIgnoredConfig()) CopyIgnoredConfig copyIgnored,
     @Default(<String, String>{}) Map<String, String> aliases,
     @Default(<String, List<HookEntry>>{}) HookMap hooks,
   }) = _Config;
@@ -52,10 +53,8 @@ sealed class Config with _$Config {
 /// Sources for config values, tracked for `config show`.
 @freezed
 sealed class ConfigWithSource with _$ConfigWithSource {
-  const factory ConfigWithSource({
-    required Config config,
-    @Default(<String>[]) List<String> sources,
-  }) = _ConfigWithSource;
+  const factory ConfigWithSource({required Config config, @Default(<String>[]) List<String> sources}) =
+      _ConfigWithSource;
 }
 
 HookMap _parseHooks(Map<String, Object?> hooksMap) {
@@ -68,14 +67,7 @@ HookMap _parseHooks(Map<String, Object?> hooksMap) {
       result[hookType] = [HookEntry(name: hookType, command: value)];
     } else if (value is Map<String, Object?>) {
       // Named form: [hooks.pre-merge] test = "cargo test"
-      result[hookType] = value.entries
-          .map(
-            (e) => HookEntry(
-              name: e.key,
-              command: e.value as String? ?? '',
-            ),
-          )
-          .toList();
+      result[hookType] = value.entries.map((e) => HookEntry(name: e.key, command: e.value as String? ?? '')).toList();
     }
   }
   return result;
@@ -86,6 +78,8 @@ Config _parseToml(String content) {
 
   final mergeMap = doc['merge'] as Map<String, Object?>? ?? {};
   final listMap = doc['list'] as Map<String, Object?>? ?? {};
+  final stepMap = doc['step'] as Map<String, Object?>? ?? {};
+  final copyIgnoredMap = stepMap['copy-ignored'] as Map<String, Object?>? ?? {};
   final aliasMap = doc['aliases'] as Map<String, Object?>? ?? {};
   final hooksMap = doc['hooks'] as Map<String, Object?>? ?? {};
 
@@ -98,12 +92,9 @@ Config _parseToml(String content) {
       verify: mergeMap['verify'] as bool? ?? true,
       push: mergeMap['push'] as bool? ?? false,
     ),
-    list: ListConfig(
-      url: listMap['url'] as String? ?? '',
-    ),
-    aliases: aliasMap.map(
-      (key, value) => MapEntry(key, value as String? ?? ''),
-    ),
+    list: ListConfig(url: listMap['url'] as String? ?? ''),
+    copyIgnored: CopyIgnoredConfig(exclude: (copyIgnoredMap['exclude'] as List<Object?>?)?.cast<String>() ?? []),
+    aliases: aliasMap.map((key, value) => MapEntry(key, value as String? ?? '')),
     hooks: _parseHooks(hooksMap),
   );
 }
@@ -117,30 +108,24 @@ HookMap _mergeHooks(HookMap base, HookMap override) {
 }
 
 Config _mergeConfigs(Config base, Config override) => Config(
-      worktreePath: override.worktreePath.isNotEmpty
-          ? override.worktreePath
-          : base.worktreePath,
-      merge: MergeConfig(
-        squash: override.merge.squash,
-        rebase: override.merge.rebase,
-        remove: override.merge.remove,
-        verify: override.merge.verify,
-        push: override.merge.push,
-      ),
-      list: ListConfig(
-        url: override.list.url.isNotEmpty
-            ? override.list.url
-            : base.list.url,
-      ),
-      aliases: {...base.aliases, ...override.aliases},
-      hooks: _mergeHooks(base.hooks, override.hooks),
-    );
+  worktreePath: override.worktreePath.isNotEmpty ? override.worktreePath : base.worktreePath,
+  merge: MergeConfig(
+    squash: override.merge.squash,
+    rebase: override.merge.rebase,
+    remove: override.merge.remove,
+    verify: override.merge.verify,
+    push: override.merge.push,
+  ),
+  list: ListConfig(url: override.list.url.isNotEmpty ? override.list.url : base.list.url),
+  copyIgnored: CopyIgnoredConfig(exclude: {...base.copyIgnored.exclude, ...override.copyIgnored.exclude}.toList()),
+  aliases: {...base.aliases, ...override.aliases},
+  hooks: _mergeHooks(base.hooks, override.hooks),
+);
 
 Config _applyEnvOverrides(Config config) {
   final env = Platform.environment;
   return config.copyWith(
-    worktreePath:
-        env['DOJJO_WORKTREE_PATH'] ?? config.worktreePath,
+    worktreePath: env['DOJJO_WORKTREE_PATH'] ?? config.worktreePath,
     merge: config.merge.copyWith(
       squash: _envBool(env, 'DOJJO_MERGE__SQUASH') ?? config.merge.squash,
       rebase: _envBool(env, 'DOJJO_MERGE__REBASE') ?? config.merge.rebase,
@@ -195,6 +180,5 @@ Future<ConfigWithSource> loadConfig({String? projectRoot}) async {
 
 // Exposed for testing.
 Config parseToml(String content) => _parseToml(content);
-Config mergeConfigs(Config base, Config override) =>
-    _mergeConfigs(base, override);
+Config mergeConfigs(Config base, Config override) => _mergeConfigs(base, override);
 Config applyEnvOverrides(Config config) => _applyEnvOverrides(config);

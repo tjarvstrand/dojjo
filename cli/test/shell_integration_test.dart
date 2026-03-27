@@ -51,17 +51,11 @@ void main() {
     });
 
     test('returns config.fish for fish', () {
-      expect(
-        defaultRcFile('fish'),
-        endsWith('/.config/fish/config.fish'),
-      );
+      expect(defaultRcFile('fish'), endsWith('/.config/fish/config.fish'));
     });
 
     test('throws for unknown shell', () {
-      expect(
-        () => defaultRcFile('powershell'),
-        throwsA(isA<ArgumentError>()),
-      );
+      expect(() => defaultRcFile('powershell'), throwsA(isA<ArgumentError>()));
     });
   });
 }

@@ -22,8 +22,7 @@ class ShellInitCommand extends Command<void> {
   String get name => 'init';
 
   @override
-  String get description =>
-      'Output shell integration code (bash, zsh, or fish)';
+  String get description => 'Output shell integration code (bash, zsh, or fish)';
 
   @override
   Future<void> run() async {
@@ -49,8 +48,7 @@ class ShellInstallCommand extends Command<void> {
       usageException('Missing required argument: <shell>');
     }
     final shellName = rest.first;
-    final path =
-        rest.length > 1 ? rest[1] : shell.defaultRcFile(shellName);
+    final path = rest.length > 1 ? rest[1] : shell.defaultRcFile(shellName);
     await shell.install(shellName, path);
     stdout.writeln('Added djo shell integration to $path');
   }

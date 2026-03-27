@@ -29,8 +29,7 @@ sealed class WorkspaceInfo with _$WorkspaceInfo {
     required int modifiedFiles,
   }) = _WorkspaceInfo;
 
-  factory WorkspaceInfo.fromJson(Map<String, Object?> json) =>
-      _$WorkspaceInfoFromJson(json);
+  factory WorkspaceInfo.fromJson(Map<String, Object?> json) => _$WorkspaceInfoFromJson(json);
 }
 
 var verbose = false;
@@ -79,18 +78,13 @@ List<WorkspaceInfo> parseWorkspaceList(String output) =>
       );
     }).toList();
 
-Future<String> workspaceAdd(
-  String path, {
-  String? name,
-  String? revision,
-}) =>
-    _run([
-      'workspace',
-      'add',
-      if (name != null) ...['--name', name],
-      if (revision != null) ...['-r', revision],
-      path,
-    ]);
+Future<String> workspaceAdd(String path, {String? name, String? revision}) => _run([
+  'workspace',
+  'add',
+  if (name != null) ...['--name', name],
+  if (revision != null) ...['-r', revision],
+  path,
+]);
 
 Future<String> workspaceList() => _run(['workspace', 'list']);
 
@@ -99,8 +93,7 @@ Future<List<WorkspaceInfo>> workspaceListRich() async =>
 
 Future<String> workspaceUpdateStale() => _run(['workspace', 'update-stale']);
 
-Future<String> workspaceForget(String name) =>
-    _run(['workspace', 'forget', name]);
+Future<String> workspaceForget(String name) => _run(['workspace', 'forget', name]);
 
 Future<String> workspaceRoot([String? name]) => _run([
   'workspace',
@@ -108,29 +101,24 @@ Future<String> workspaceRoot([String? name]) => _run([
   if (name != null) ...['--name', name],
 ]);
 
-Future<String> bookmarkCreate(String name) =>
-    _run(['bookmark', 'create', name]);
+Future<String> bookmarkCreate(String name) => _run(['bookmark', 'create', name]);
 
-Future<String> bookmarkDelete(String name) =>
-    _run(['bookmark', 'delete', name]);
+Future<String> bookmarkDelete(String name) => _run(['bookmark', 'delete', name]);
 
-Future<String> bookmarkSet(String name, String revision) =>
-    _run(['bookmark', 'set', name, '-r', revision]);
+Future<String> bookmarkSet(String name, String revision) => _run(['bookmark', 'set', name, '-r', revision]);
 
-Future<String> bookmarkTrack(String name, {required String remote}) =>
-    _run(['bookmark', 'track', '$name@$remote']);
+Future<String> bookmarkTrack(String name, {required String remote}) => _run(['bookmark', 'track', '$name@$remote']);
 
 Future<String> gitPush({String? bookmark, bool all = false}) => _run([
-      'git',
-      'push',
-      if (all) '--all',
-      if (bookmark != null && !all) ...['--bookmark', bookmark],
-    ]);
+  'git',
+  'push',
+  if (all) '--all',
+  if (bookmark != null && !all) ...['--bookmark', bookmark],
+]);
 
 Future<String> squash() => _run(['squash']);
 
-Future<String> rebase(String destination) =>
-    _run(['rebase', '-d', destination]);
+Future<String> rebase(String destination) => _run(['rebase', '-d', destination]);
 
 Future<void> deleteDirectory(String path) async {
   final dir = Directory(path);

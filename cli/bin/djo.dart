@@ -4,6 +4,7 @@ import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 
 import 'package:dojjo/src/commands/config_command.dart';
+import 'package:dojjo/src/commands/copy_ignored_command.dart';
 import 'package:dojjo/src/commands/hook_command.dart';
 import 'package:dojjo/src/commands/list_command.dart';
 import 'package:dojjo/src/commands/merge_command.dart';
@@ -44,6 +45,7 @@ class _DjoCommandRunner extends CommandRunner<void> {
     addCommand(ListCommand());
     addCommand(RemoveCommand(config));
     addCommand(HookCommand(config));
+    addCommand(CopyIgnoredCommand(config));
     addCommand(UpdateStaleCommand());
     addCommand(ShellCommand());
   }
