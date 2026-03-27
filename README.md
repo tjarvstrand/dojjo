@@ -139,7 +139,9 @@ Used in `worktree-path`, hook commands, aliases, and `--execute`:
 | `{{ repo_path }}` | Absolute repository path |
 | `{{ repo }}` | Repository directory name |
 | `{{ name \| sanitize }}` | Filesystem-safe name (slashes become hyphens) |
+| `{{ name \| sanitize_db }}` | Database-safe name (lowercase, underscores, hash suffix) |
 | `{{ name \| hash_port }}` | Deterministic port in range 10000-19999 |
+| `{{ workspace_index }}` | Persistent integer index for the workspace (reusable after removal) |
 
 Full Jinja2 syntax is supported (conditionals, loops, built-in filters) via the [jinja](https://pub.dev/packages/jinja) package for compatibility with worktrunk's minijinja templates.
 

@@ -30,8 +30,9 @@ class SwitchCommand extends Command<void> {
 
   Future<String> _createWorkspace(String name, {String? revision}) async {
     final root = await jj.workspaceRoot();
+    final index = await state.workspaceIndex(name);
     final path = _config.worktreePath.isNotEmpty
-        ? renderTemplate(_config.worktreePath, name: name, repoPath: root)
+        ? renderTemplate(_config.worktreePath, name: name, repoPath: root, workspaceIndex: index)
         : p.join(root, '..', name);
     await jj.workspaceAdd(path, name: name, revision: revision);
     await jj.bookmarkCreate(name);
@@ -95,9 +96,9 @@ class SwitchCommand extends Command<void> {
     return lines[index - 1];
   }
 
-  Future<void> _runHook(String hookType, String name, String path) async {
+  Future<void> _runHook(String hookType, String name, String path, {int? workspaceIndex}) async {
     if (argResults!.flag('skip-hooks')) return;
-    await hooks.runHooks(hookType, hooks: _config.hooks, name: name, path: path);
+    await hooks.runHooks(hookType, hooks: _config.hooks, name: name, path: path, workspaceIndex: workspaceIndex);
   }
 
   @override
@@ -141,8 +142,9 @@ class SwitchCommand extends Command<void> {
     if (create) {
       await _runHook('pre-start', name, '.');
       path = await _createWorkspace(name, revision: base);
+      final index = await state.workspaceIndex(name);
       stdout.writeln(path);
-      await _runHook('post-start', name, path);
+      await _runHook('post-start', name, path, workspaceIndex: index);
     } else {
       await _runHook('pre-switch', name, '.');
       try {
@@ -154,17 +156,19 @@ class SwitchCommand extends Command<void> {
         }
         await _runHook('pre-start', name, '.');
         path = await _createWorkspace(name, revision: base);
+        final index = await state.workspaceIndex(name);
         stdout.writeln(path);
-        await _runHook('post-start', name, path);
-        await _runHook('post-switch', name, path);
+        await _runHook('post-start', name, path, workspaceIndex: index);
+        await _runHook('post-switch', name, path, workspaceIndex: index);
 
         if (execute != null) {
           await _executeInWorkspace(execute, path);
         }
         return;
       }
+      final index = await state.workspaceIndex(name);
       stdout.writeln(path);
-      await _runHook('post-switch', name, path);
+      await _runHook('post-switch', name, path, workspaceIndex: index);
     }
 
     if (execute != null) {

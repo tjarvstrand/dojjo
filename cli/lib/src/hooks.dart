@@ -25,7 +25,7 @@ Future<void> runHooks(
   required HookMap hooks,
   required String name,
   required String path,
-  String? bookmark,
+  int? workspaceIndex,
 }) async {
   final entries = hooks[hookType];
   if (entries == null || entries.isEmpty) return;
@@ -33,7 +33,9 @@ Future<void> runHooks(
   final isBlocking = hookType.startsWith('pre-');
 
   for (final entry in entries) {
-    final rendered = rewriteWorktrunkCommands(renderTemplate(entry.command, name: name, repoPath: path));
+    final rendered = rewriteWorktrunkCommands(
+      renderTemplate(entry.command, name: name, repoPath: path, workspaceIndex: workspaceIndex),
+    );
 
     stderr.writeln('hook($hookType/${entry.name}): $rendered');
 

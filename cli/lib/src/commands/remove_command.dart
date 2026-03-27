@@ -6,6 +6,7 @@ import 'package:dojjo/src/config.dart';
 import 'package:dojjo/src/hooks.dart' as hooks;
 import 'package:dojjo/src/jj.dart' as jj;
 import 'package:dojjo/src/prompt.dart' as prompt;
+import 'package:dojjo/src/state.dart' as state;
 
 class RemoveCommand extends Command<void> {
   RemoveCommand(this._config) {
@@ -54,6 +55,7 @@ class RemoveCommand extends Command<void> {
       }
     }
     await jj.deleteDirectory(root);
+    await state.removeWorkspaceIndex(name);
     stderr.writeln("Removed workspace '$name'");
 
     if (!skipHooks) {

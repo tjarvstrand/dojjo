@@ -68,6 +68,26 @@ void main() {
     });
   });
 
+  group('sanitizeDb', () {
+    test('lowercases and replaces slashes with underscores', () {
+      expect(sanitizeDb('Feature/Auth'), startsWith('feature_auth_'));
+    });
+
+    test('appends a hash suffix', () {
+      final result = sanitizeDb('feature/auth');
+      expect(result, matches(RegExp(r'^feature_auth_[a-z0-9]{3}$')));
+    });
+
+    test('is deterministic', () {
+      expect(sanitizeDb('test'), equals(sanitizeDb('test')));
+    });
+
+    test('works via template filter', () {
+      final result = renderTemplate('{{ name | sanitize_db }}', name: 'feat/auth', repoPath: '/repo');
+      expect(result, startsWith('feat_auth_'));
+    });
+  });
+
   group('hashPort', () {
     test('returns port in range', () {
       final port = hashPort('test');
