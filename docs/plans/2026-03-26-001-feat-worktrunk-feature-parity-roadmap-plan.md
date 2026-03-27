@@ -128,13 +128,13 @@ Adapt worktrunk's status indicators for jj:
 
 **Goal:** Make dojjo configurable per-user and per-project. All supported config keys must be compatible with worktrunk's `.config/wt.toml` format so that users with an existing worktrunk project config can use dojjo out-of-the-box without maintaining a separate config file.
 
-### 3.0 Worktrunk Compatibility
+### 3.0 Worktrunk Compatibility ✅
 - Support worktrunk's TOML key names for overlapping features (adapted for jj where needed)
 - Ignore worktrunk-only keys gracefully (no errors for `commit.stage`, `ci.platform`, etc.)
 - At each level, both a dojjo-specific and a worktrunk config file are recognized
 - If both exist at the same level, they are merged with dojjo-specific settings taking precedence
 
-### 3.1 Configuration File Support
+### 3.1 Configuration File Support ✅
 Config files are loaded at two levels. At each level, both dojjo and worktrunk files are recognized and merged (dojjo takes precedence):
 
 - **User config:**
@@ -146,7 +146,7 @@ Config files are loaded at two levels. At each level, both dojjo and worktrunk f
 - Project overrides user config
 - Effective merge order (lowest to highest precedence): worktrunk user → dojjo user → worktrunk project → dojjo project
 
-### 3.2 Configuration Keys (Phase 1)
+### 3.2 Configuration Keys (Phase 1) ✅
 Worktrunk-compatible keys where applicable:
 ```toml
 # Workspace path template (worktrunk: worktree-path)
@@ -168,7 +168,7 @@ url = "http://localhost:{{ name | hash_port }}"
 url = "echo http://localhost:{{ name | hash_port }}"
 ```
 
-### 3.3 Template Variables
+### 3.3 Template Variables ✅
 Worktrunk-compatible where possible, with jj-specific additions:
 - `{{ repo_path }}` — absolute repository path (worktrunk-compatible)
 - `{{ repo }}` — repository directory name (worktrunk-compatible)
@@ -177,11 +177,11 @@ Worktrunk-compatible where possible, with jj-specific additions:
 - `{{ name | sanitize }}` — filesystem-safe name (worktrunk-compatible)
 - `{{ name | hash_port }}` — deterministic port 10000–19999 (worktrunk-compatible)
 
-### 3.4 Environment Variable Overrides
+### 3.4 Environment Variable Overrides ✅
 - `DOJJO_` prefix, SCREAMING_SNAKE_CASE (same convention as worktrunk's `WORKTRUNK_` prefix)
 - e.g., `DOJJO_WORKTREE_PATH`, `DOJJO_MERGE__SQUASH`
 
-### 3.5 Config Show Command
+### 3.5 Config Show Command ✅
 - `djo config show` — display effective configuration for debugging
 - Show which file each value came from (user vs project)
 

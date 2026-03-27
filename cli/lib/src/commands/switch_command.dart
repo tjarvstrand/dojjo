@@ -2,13 +2,17 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 
+import 'package:dojjo/src/config.dart';
 import 'package:dojjo/src/jj.dart' as jj;
 import 'package:dojjo/src/prompt.dart' as prompt;
+import 'package:dojjo/src/template.dart';
 
 class SwitchCommand extends Command<void> {
-  SwitchCommand() {
+  SwitchCommand(this._config) {
     argParser.addFlag('create', abbr: 'c', defaultsTo: false);
   }
+
+  final Config _config;
 
   @override
   String get name => 'switch';
@@ -16,11 +20,17 @@ class SwitchCommand extends Command<void> {
   @override
   String get description => 'Create or switch to a jj workspace';
 
-  Future<String> _createWorkspace(String name) async {
+  Future<String> _createWorkspace(String workspaceName) async {
     final root = await jj.workspaceRoot();
-    final path = '$root/../$name';
-    await jj.workspaceAdd(path, name);
-    await jj.bookmarkCreate(name);
+    final path = _config.worktreePath.isNotEmpty
+        ? renderTemplate(
+            _config.worktreePath,
+            name: workspaceName,
+            repoPath: root,
+          )
+        : '$root/../$workspaceName';
+    await jj.workspaceAdd(path, workspaceName);
+    await jj.bookmarkCreate(workspaceName);
     return path;
   }
 
@@ -31,24 +41,24 @@ class SwitchCommand extends Command<void> {
     if (rest.isEmpty) {
       usageException('Missing required argument: <name>');
     }
-    final name = rest.first;
+    final workspaceName = rest.first;
 
     if (create) {
-      final path = await _createWorkspace(name);
+      final path = await _createWorkspace(workspaceName);
       stdout.writeln(path);
       return;
     }
 
     try {
-      final path = await jj.workspaceRoot(name);
+      final path = await jj.workspaceRoot(workspaceName);
       stdout.writeln(path);
     } on jj.CommandError {
       final confirmed =
-          await prompt.confirm("Workspace '$name' not found. Create it?");
+          await prompt.confirm("Workspace '$workspaceName' not found. Create it?");
       if (!confirmed) {
         throw Exception('Aborted');
       }
-      final path = await _createWorkspace(name);
+      final path = await _createWorkspace(workspaceName);
       stdout.writeln(path);
     }
   }

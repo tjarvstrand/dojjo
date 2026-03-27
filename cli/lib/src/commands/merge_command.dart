@@ -2,13 +2,16 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 
+import 'package:dojjo/src/config.dart';
 import 'package:dojjo/src/jj.dart' as jj;
 import 'package:dojjo/src/prompt.dart' as prompt;
 
 class MergeCommand extends Command<void> {
-  MergeCommand() {
+  MergeCommand(this._config) {
     argParser.addFlag('yes', abbr: 'y', defaultsTo: false);
   }
+
+  final Config _config;
 
   @override
   String get name => 'merge';
@@ -45,11 +48,17 @@ class MergeCommand extends Command<void> {
     );
     await prompt.confirmOrAbort('Proceed?', yes: yes);
 
-    await _step('squash', jj.squash);
-    await _step('rebase', () => jj.rebase(target));
+    if (_config.merge.squash) {
+      await _step('squash', jj.squash);
+    }
+    if (_config.merge.rebase) {
+      await _step('rebase', () => jj.rebase(target));
+    }
     await _step('bookmark set', () => jj.bookmarkSet(target, '@-'));
     await _step('workspace forget', () => jj.workspaceForget('@'));
-    await jj.deleteDirectory(root);
+    if (_config.merge.remove) {
+      await jj.deleteDirectory(root);
+    }
     stdout.writeln('$root/..');
   }
 }
