@@ -54,11 +54,7 @@ jobs:
       - name: Rename binary
         shell: bash
         run: |
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            mv build/djo.exe build/${{ matrix.artifact }}
-          else
-            mv build/djo build/${{ matrix.artifact }}
-          fi
+          mv build/djo build/${{ matrix.artifact }}
       - uses: softprops/action-gh-release@v2
         with:
           files: cli/build/${{ matrix.artifact }}
