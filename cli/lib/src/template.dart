@@ -9,7 +9,7 @@ final _environment = Environment(
   filters: {
     'sanitize': (String value) => sanitize(value),
     'sanitize_db': (String value) => sanitizeDb(value),
-    'hash_port': (String value) => hashPort(value).toString(),
+    'hash_port': (String value) => hashPort(value),
   },
 );
 
@@ -18,26 +18,23 @@ String render(String template, Map<String, Object?> context) => _environment.fro
 
 /// Render a template with standard workspace variables.
 /// For simple contexts (worktree-path, aliases) where async jj calls aren't needed.
-String renderTemplate(String template, {required String name, required String repoPath, int? workspaceIndex}) =>
-    render(template, {
-      'name': name,
-      'branch': name,
-      'repo_path': repoPath,
-      'repo': p.basename(repoPath),
-      'worktree_path': repoPath,
-      'workspace_path': repoPath,
-      'worktree_name': p.basename(repoPath),
-      'workspace_name': p.basename(repoPath),
-      'cwd': Directory.current.path,
-      'workspace_index': workspaceIndex ?? -1,
-    });
+String renderTemplate(String template, {required String name, required String repoPath}) => render(template, {
+  'name': name,
+  'branch': name,
+  'repo_path': repoPath,
+  'repo': p.basename(repoPath),
+  'worktree_path': repoPath,
+  'workspace_path': repoPath,
+  'worktree_name': p.basename(repoPath),
+  'workspace_name': p.basename(repoPath),
+  'cwd': Directory.current.path,
+});
 
 /// Build a full template context with all worktrunk-compatible variables.
 /// Requires async jj calls for commit, remote, and default branch info.
 Future<Map<String, Object?>> buildFullContext({
   required String name,
   required String path,
-  int? workspaceIndex,
   String? hookType,
   String? hookName,
   String? target,
@@ -52,7 +49,6 @@ Future<Map<String, Object?>> buildFullContext({
     'worktree_name': p.basename(path),
     'workspace_name': p.basename(path),
     'cwd': Directory.current.path,
-    'workspace_index': workspaceIndex ?? -1,
     'hook_type': hookType ?? '',
     'hook_name': hookName ?? '',
   };

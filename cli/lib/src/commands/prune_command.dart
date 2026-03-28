@@ -4,7 +4,6 @@ import 'package:args/command_runner.dart';
 
 import 'package:dojjo/src/jj.dart';
 import 'package:dojjo/src/prompt.dart';
-import 'package:dojjo/src/state.dart';
 
 class PruneCommand extends Command<void> {
   PruneCommand() {
@@ -56,7 +55,6 @@ class PruneCommand extends Command<void> {
         // Bookmark may not exist.
       }
       await deleteDirectory(root);
-      await removeWorkspaceIndex(workspace.name);
       stderr.writeln('  Removed ${workspace.name}');
     }
   }

@@ -27,7 +27,6 @@ Future<void> runHooks(
   required HookMap hooks,
   required String name,
   required String path,
-  int? workspaceIndex,
   String? target,
 }) async {
   final pipeline = hooks[hookType];
@@ -35,13 +34,7 @@ Future<void> runHooks(
 
   final isBlocking = hookType.startsWith('pre-');
 
-  final context = await buildFullContext(
-    name: name,
-    path: path,
-    workspaceIndex: workspaceIndex,
-    hookType: hookType,
-    target: target,
-  );
+  final context = await buildFullContext(name: name, path: path, hookType: hookType, target: target);
 
   if (isBlocking) {
     await _runPipeline(pipeline, context, path, blocking: true);
