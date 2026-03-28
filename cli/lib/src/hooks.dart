@@ -94,12 +94,8 @@ Future<void> _runEntry(
 
   if (result.exitCode != 0) {
     if (blocking) {
-      throw Exception(
-        'Hook $hookType/${entry.name} failed with exit code ${result.exitCode}',
-      );
+      throw Exception('Hook $hookType/${entry.name} failed with exit code ${result.exitCode}');
     }
-    stderr.writeln(
-      'hook($hookType/${entry.name}) failed (exit ${result.exitCode}), continuing',
-    );
+    stderr.writeln('hook($hookType/${entry.name}) failed (exit ${result.exitCode}), continuing');
   }
 }

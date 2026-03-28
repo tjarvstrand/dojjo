@@ -64,10 +64,7 @@ void main() {
           [HookEntry(name: 'after', command: 'echo ran > ${outFile.path}')],
         ],
       };
-      await expectLater(
-        runHooks('pre-merge', hooks: hooks, name: 'ws', path: tempDir.path),
-        throwsA(isA<Exception>()),
-      );
+      await expectLater(runHooks('pre-merge', hooks: hooks, name: 'ws', path: tempDir.path), throwsA(isA<Exception>()));
       // Second step should not have run.
       expect(outFile.existsSync(), isFalse);
     });

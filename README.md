@@ -7,15 +7,6 @@ A workspace manager for [jj](https://github.com/jj-vcs/jj), inspired by [worktru
 - [jj](https://github.com/jj-vcs/jj)
 - [mise](https://mise.jdx.dev/) (manages Dart SDK automatically)
 
-## Building
-
-```sh
-cd cli
-mise run build
-```
-
-The native binary is output to `cli/build/djo`.
-
 ## Usage
 
 Run `djo` from within a jj repository.
@@ -223,6 +214,19 @@ post-start = [
 
 Use `--skip-hooks` on switch, merge, or remove to skip hooks. Use `djo hook <type>` to run hooks manually.
 
+To disable worktrunk hooks in dojjo, add to your dojjo config (`.config/djo.toml`):
+
+```toml
+# Disable all worktrunk hooks
+ignore-worktrunk-hooks = true
+
+# Disable specific hook types
+ignore-worktrunk-hooks = ["post-start", "pre-merge"]
+
+# Disable specific named hooks within a type
+ignore-worktrunk-hooks = ["pre-merge.lint"]
+```
+
 Hook commands from worktrunk configs (`wt step copy-ignored`, `wt merge`, etc.) are automatically rewritten to their `djo` equivalents.
 
 ### Copy Ignored
@@ -254,6 +258,8 @@ mise run analyze    # Static analysis (--fatal-infos)
 mise run generate   # Freezed code generation (pass 'watch' for continuous)
 mise run compile    # Check compilation
 ```
+
+The native binary is output to `cli/build/djo`.
 
 ## Future Work
 

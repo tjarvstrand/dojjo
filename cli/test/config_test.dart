@@ -111,6 +111,22 @@ test = "cargo test"
       expect(config.hooks['pre-merge'], hasLength(1));
     });
 
+    test('parses ignore-worktrunk-hooks as boolean', () {
+      final config = parseToml('ignore-worktrunk-hooks = true');
+      expect(config.ignoreWorktrunkHooks, isA<IgnoreWorktrunkHooksAll>());
+    });
+
+    test('parses ignore-worktrunk-hooks as list', () {
+      final config = parseToml('ignore-worktrunk-hooks = ["post-start", "pre-merge"]');
+      final ignore = config.ignoreWorktrunkHooks as IgnoreWorktrunkHooksTypes;
+      expect(ignore.types, equals(['post-start', 'pre-merge']));
+    });
+
+    test('defaults to not ignoring worktrunk hooks', () {
+      final config = parseToml('');
+      expect(config.ignoreWorktrunkHooks, isA<IgnoreWorktrunkHooksNone>());
+    });
+
     test('ignores unknown keys gracefully', () {
       // worktrunk-only keys should not cause errors
       final config = parseToml('''
@@ -203,6 +219,71 @@ test = "cargo test"
       expect(merged.hooks, hasLength(2));
       expect(merged.hooks, contains('post-start'));
       expect(merged.hooks, contains('pre-merge'));
+    });
+  });
+
+  group('filterWorktrunkHooks', () {
+    final hooks = <String, HookPipeline>{
+      'post-start': [
+        [HookEntry(name: 'install', command: 'npm install')],
+      ],
+      'pre-merge': [
+        [HookEntry(name: 'test', command: 'cargo test')],
+      ],
+      'post-merge': [
+        [HookEntry(name: 'notify', command: 'echo done')],
+      ],
+    };
+
+    test('no-op when nothing ignored', () {
+      final filtered = filterWorktrunkHooks(hooks, const IgnoreWorktrunkHooks.none());
+      expect(filtered, hasLength(3));
+    });
+
+    test('ignores all', () {
+      final filtered = filterWorktrunkHooks(hooks, const IgnoreWorktrunkHooks.all());
+      expect(filtered, isEmpty);
+    });
+
+    test('ignores specific types', () {
+      final filtered = filterWorktrunkHooks(hooks, const IgnoreWorktrunkHooks.types(['post-start', 'post-merge']));
+      expect(filtered, hasLength(1));
+      expect(filtered, contains('pre-merge'));
+    });
+
+    test('ignores types not present in hooks', () {
+      final filtered = filterWorktrunkHooks(hooks, const IgnoreWorktrunkHooks.types(['nonexistent']));
+      expect(filtered, hasLength(3));
+    });
+
+    test('ignores specific named hook', () {
+      final namedHooks = <String, HookPipeline>{
+        'pre-merge': [
+          [HookEntry(name: 'test', command: 'cargo test'), HookEntry(name: 'lint', command: 'cargo clippy')],
+        ],
+      };
+      final filtered = filterWorktrunkHooks(namedHooks, const IgnoreWorktrunkHooks.types(['pre-merge.lint']));
+      expect(filtered, hasLength(1));
+      expect(filtered['pre-merge']![0], hasLength(1));
+      expect(filtered['pre-merge']![0][0].name, equals('test'));
+    });
+
+    test('removes hook type when all names are ignored', () {
+      final namedHooks = <String, HookPipeline>{
+        'pre-merge': [
+          [HookEntry(name: 'lint', command: 'cargo clippy')],
+        ],
+      };
+      final filtered = filterWorktrunkHooks(namedHooks, const IgnoreWorktrunkHooks.types(['pre-merge.lint']));
+      expect(filtered, isEmpty);
+    });
+
+    test('mixes whole-type and named ignores', () {
+      final filtered = filterWorktrunkHooks(hooks, const IgnoreWorktrunkHooks.types(['post-start', 'pre-merge.test']));
+      // post-start removed entirely, pre-merge.test removed but type remains
+      // if it had other entries (it doesn't in this fixture, so pre-merge is removed too)
+      expect(filtered, contains('post-merge'));
+      expect(filtered, isNot(contains('post-start')));
     });
   });
 }

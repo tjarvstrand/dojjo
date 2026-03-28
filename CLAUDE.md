@@ -18,6 +18,14 @@ Keep compatibility with worktrunk's **configuration files** (`.config/wt.toml` f
 
 Always add tests covering new functionality or fixes for defects.
 
+## Verification
+
+After making changes, always run both:
+```
+mise run analyze       # Static analysis
+mise run format-check  # Formatting
+```
+
 ## Build
 
 The CLI lives in `cli/`. It's a Dart project compiled to a native binary.

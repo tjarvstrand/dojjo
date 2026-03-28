@@ -48,7 +48,12 @@ Future<String> _run(List<String> args) async {
     stderr.writeln('djo: jj ${args.join(' ')}');
   }
 
-  final result = await Process.run('jj', args);
+  final ProcessResult result;
+  try {
+    result = await Process.run('jj', args);
+  } on ProcessException catch (e) {
+    throw CommandError(-1, 'Failed to run jj: ${e.message}');
+  }
 
   if (result.exitCode != 0) {
     throw CommandError(result.exitCode, (result.stderr as String).trim());
@@ -117,8 +122,7 @@ Future<String> gitPush({String? bookmark, bool all = false}) => _run([
   if (bookmark != null && !all) ...['--bookmark', bookmark],
 ]);
 
-Future<String> logTemplate(String revset, String template) =>
-    _run(['log', '-r', revset, '--no-graph', '-T', template]);
+Future<String> logTemplate(String revset, String template) => _run(['log', '-r', revset, '--no-graph', '-T', template]);
 
 Future<String> gitRemoteList() => _run(['git', 'remote', 'list']);
 

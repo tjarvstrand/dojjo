@@ -14,17 +14,11 @@ final _environment = Environment(
 );
 
 /// Render a template with the given context variables.
-String render(String template, Map<String, Object?> context) =>
-    _environment.fromString(template).render(context);
+String render(String template, Map<String, Object?> context) => _environment.fromString(template).render(context);
 
 /// Render a template with standard workspace variables.
 /// For simple contexts (worktree-path, aliases) where async jj calls aren't needed.
-String renderTemplate(
-  String template, {
-  required String name,
-  required String repoPath,
-  int? workspaceIndex,
-}) =>
+String renderTemplate(String template, {required String name, required String repoPath, int? workspaceIndex}) =>
     render(template, {
       'name': name,
       'branch': name,
@@ -124,7 +118,7 @@ Future<Map<String, Object?>> buildFullContext({
     if (remote != null) {
       context['upstream'] = '$name@$remote';
     }
-  } on Exception {
+  } on jj.CommandError {
     // No upstream.
   }
 
