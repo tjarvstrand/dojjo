@@ -16,8 +16,9 @@ class SwitchCommand extends Command<void> {
   SwitchCommand(this._config) {
     argParser
       ..addFlag('create', abbr: 'c', defaultsTo: false)
+      ..addFlag('bookmark', defaultsTo: _config.createBookmark, help: 'Create a bookmark for the new workspace')
       ..addFlag('skip-hooks', defaultsTo: false, help: 'Skip hooks')
-      ..addOption('base', abbr: 'b', help: 'Base revision for new workspace')
+      ..addOption('base', abbr: 'b', help: 'Base revision for new workspace (defaults to current working-copy parents)')
       ..addOption('execute', abbr: 'x', help: 'Command to run in workspace after switching');
   }
 
@@ -27,19 +28,21 @@ class SwitchCommand extends Command<void> {
   String get name => 'switch';
 
   @override
-  String get description => 'Create or switch to a jj workspace';
+  String get description => 'Create or switch to a jj workspace (use "-" for previous workspace)';
 
-  Future<String> _createWorkspace(String name, {String? revision}) async {
+  Future<String> _createWorkspace(String name, {String? revision, required bool createBookmark}) async {
     final root = await workspaceRoot();
-    final path = _config.worktreePath.isNotEmpty
-        ? renderTemplate(_config.worktreePath, name: name, repoPath: root)
+    final path = _config.workspacePath.isNotEmpty
+        ? renderTemplate(_config.workspacePath, name: name, repoPath: root)
         : p.join(root, '..', name);
     await workspaceAdd(path, name: name, revision: revision);
-    await bookmarkCreate(name);
-    try {
-      await bookmarkTrack(name, remote: 'origin');
-    } on CommandError {
-      // Remote may not exist yet — that's fine.
+    if (createBookmark) {
+      await bookmarkCreate(name);
+      try {
+        await bookmarkTrack(name, remote: 'origin');
+      } on CommandError {
+        // Remote may not exist yet — that's fine.
+      }
     }
     return path;
   }
@@ -104,6 +107,7 @@ class SwitchCommand extends Command<void> {
   @override
   Future<void> run() async {
     final create = argResults!.flag('create');
+    final bookmark = argResults!.flag('bookmark');
     final base = argResults!.option('base');
     final execute = argResults!.option('execute');
     final rest = argResults!.rest;
@@ -122,7 +126,7 @@ class SwitchCommand extends Command<void> {
     String path;
     if (create) {
       await _runHook('pre-start', name, '.');
-      path = await _createWorkspace(name, revision: base);
+      path = await _createWorkspace(name, revision: base, createBookmark: bookmark);
       stdout.writeln(path);
       await _runHook('post-start', name, path);
     } else {
@@ -135,7 +139,7 @@ class SwitchCommand extends Command<void> {
           throw Exception('Aborted');
         }
         await _runHook('pre-start', name, '.');
-        path = await _createWorkspace(name, revision: base);
+        path = await _createWorkspace(name, revision: base, createBookmark: bookmark);
         stdout.writeln(path);
         await _runHook('post-start', name, path);
         await _runHook('post-switch', name, path);

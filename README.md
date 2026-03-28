@@ -1,32 +1,27 @@
 # dojjo
 
-A workspace manager for [jj](https://github.com/jj-vcs/jj), inspired by [worktrunk](https://worktrunk.dev/) for git.
+A workspace manager for [jj](https://github.com/jj-vcs/jj).
 
-## Prerequisites
-
-- [jj](https://github.com/jj-vcs/jj)
-- [mise](https://mise.jdx.dev/) (manages Dart SDK automatically)
+Inspired by [worktrunk](https://worktrunk.dev/), but adapted to jj workflows.
 
 ## Usage
+
+### Commands
 
 Run `djo` from within a jj repository.
 
 ```sh
-djo switch -c feature       # Create workspace + bookmark
+djo switch -c feature        # Create workspace + bookmark
 djo switch feature           # Switch to existing workspace
-djo switch                   # Interactive picker (fzf or fallback)
+djo switch                   # Interactive picker
 djo switch -                 # Switch to previous workspace
 djo switch -c -b @- feature  # Create workspace from a specific revision
 djo switch -x 'npm install' feature  # Run command after switching
 djo list                     # List workspaces with status
-djo list --json              # JSON output
-djo merge -y main            # Squash, rebase, move bookmark, cleanup
-djo merge main --push        # Merge and push
-djo push                     # Push current bookmark
-djo push --all               # Push all tracked bookmarks
-djo remove -y feature        # Remove workspace + bookmark
+djo merge main               # Squash, rebase, move bookmark, cleanup
+djo remove feature           # Remove workspace + bookmark
 djo for-each 'npm test'      # Run command in every workspace
-djo prune -y                 # Remove workspaces merged into trunk
+djo prune                    # Remove workspaces merged into trunk
 djo copy-ignored --from main # Copy build caches from another workspace
 djo update-stale             # Fix stale working copies
 djo hook post-start          # Manually run hooks
@@ -162,11 +157,9 @@ Used in `worktree-path`, hook commands, aliases, and `--execute`:
 | `sanitize_db` | Database-safe (lowercase, underscores, hash suffix) |
 | `hash_port` | Deterministic port in range 10000-19999 |
 
-Full Jinja2 syntax is supported (conditionals, loops, built-in filters) via the [jinja](https://pub.dev/packages/jinja) package for compatibility with worktrunk's minijinja templates.
+Templates use Jinja2 syntax via the [jinja](https://pub.dev/packages/jinja) package for compatibility with worktrunk.
 
 ### Environment Variable Overrides
-
-`DOJJO_` prefix with `SCREAMING_SNAKE_CASE`. Nested keys use double underscores:
 
 | Config Key | Environment Variable |
 |------------|---------------------|
@@ -214,7 +207,8 @@ post-start = [
 
 Use `--skip-hooks` on switch, merge, or remove to skip hooks. Use `djo hook <type>` to run hooks manually.
 
-To disable worktrunk hooks in dojjo, add to your dojjo config (`.config/djo.toml`):
+If you have both a worktrunk config and dojjo config in your repo, you can disable worktrunk hooks in dojjo if you don't
+want to run both. Add this to your dojjo config (`.config/djo.toml`):
 
 ```toml
 # Disable all worktrunk hooks
@@ -227,7 +221,8 @@ ignore-worktrunk-hooks = ["post-start", "pre-merge"]
 ignore-worktrunk-hooks = ["pre-merge.lint"]
 ```
 
-Hook commands from worktrunk configs (`wt step copy-ignored`, `wt merge`, etc.) are automatically rewritten to their `djo` equivalents.
+Hook commands from worktrunk configs (`wt step copy-ignored`, `wt merge`, etc.) are automatically rewritten to their 
+`djo` equivalents when running in dojjo.
 
 ### Copy Ignored
 
@@ -240,16 +235,14 @@ Hook commands from worktrunk configs (`wt step copy-ignored`, `wt merge`, etc.) 
 
 ## Worktrunk Compatibility
 
-dojjo is designed so that projects with an existing `.config/wt.toml` work out of the box. Config file format, TOML keys, and Jinja template syntax are compatible with worktrunk.
+dojjo is designed so that projects with an existing `.config/wt.toml` work out of the box. Config file format, keys, and
+template syntax are compatible with worktrunk.
 
-Worktrunk features that don't apply to jj are excluded:
-
-- Fast-forward merge detection (jj uses only rebases)
-- Staging area management (jj has no index)
-- Branch stash operations (jj auto-snapshots)
-- `wt step promote` (git worktree concept)
+Worktrunk features that don't apply to jj are not supported.
 
 ## Development
+
+Make sure you have [mise](https://mise.jdx.dev/) installed.
 
 ```sh
 cd cli

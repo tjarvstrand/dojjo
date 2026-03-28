@@ -7,7 +7,7 @@ import 'package:dojjo/src/prompt.dart';
 
 class PruneCommand extends Command<void> {
   PruneCommand() {
-    argParser.addFlag('yes', abbr: 'y', defaultsTo: false);
+    argParser.addFlag('yes', abbr: 'y', defaultsTo: false, help: 'Skip confirmation prompts');
   }
 
   @override

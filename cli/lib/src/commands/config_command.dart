@@ -45,7 +45,7 @@ class ConfigShowCommand extends Command<void> {
 
     stdout.writeln('');
     stdout.writeln('Effective configuration:');
-    _show('worktree-path', config.worktreePath);
+    _show('workspace-path', config.workspacePath);
     _show('merge.squash', config.merge.squash);
     _show('merge.rebase', config.merge.rebase);
     _show('merge.remove', config.merge.remove);

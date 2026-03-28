@@ -2,10 +2,12 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 
+import 'package:dojjo/src/commands/completion_command.dart';
 import 'package:dojjo/src/shell_integration.dart';
 
 class ShellCommand extends Command<void> {
   ShellCommand() {
+    addSubcommand(CompletionCommand());
     addSubcommand(ShellInitCommand());
     addSubcommand(ShellInstallCommand());
   }

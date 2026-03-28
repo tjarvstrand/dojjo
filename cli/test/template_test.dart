@@ -39,7 +39,7 @@ void main() {
       expect(a, equals(b));
     });
 
-    test('renders full worktree-path template', () {
+    test('renders full workspace-path template', () {
       final result = renderTemplate('{{ repo_path }}/../{{ name }}', name: 'feature', repoPath: '/home/user/project');
       expect(result, equals('/home/user/project/../feature'));
     });

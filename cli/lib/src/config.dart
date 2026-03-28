@@ -65,7 +65,8 @@ Map<String, String> _aliasesFromJson(Map<String, Object?>? json) =>
 sealed class Config with _$Config {
   @JsonSerializable(fieldRename: FieldRename.kebab)
   const factory Config({
-    @Default('') String worktreePath,
+    @Default(true) bool createBookmark,
+    @Default('') String workspacePath,
     @Default(MergeConfig()) MergeConfig merge,
     @Default(ListConfig()) ListConfig list,
     @Default(CopyIgnoredConfig()) CopyIgnoredConfig copyIgnored,
@@ -122,6 +123,9 @@ Config _parseToml(String content) {
     doc['copy-ignored'] = stepMap['copy-ignored'];
   }
 
+  // Accept worktrunk's worktree-path as fallback.
+  doc['workspace-path'] ??= doc['worktree-path'];
+
   final config = Config.fromJson(doc);
   final hooksMap = doc['hooks'];
   return config.copyWith(
@@ -147,7 +151,7 @@ HookMap _mergeHooks(HookMap base, HookMap override) {
 }
 
 Config _mergeConfigs(Config base, Config override) => Config(
-  worktreePath: override.worktreePath.nonEmptyOrNull ?? base.worktreePath,
+  workspacePath: override.workspacePath.nonEmptyOrNull ?? base.workspacePath,
   merge: MergeConfig(
     squash: override.merge.squash,
     rebase: override.merge.rebase,
@@ -164,7 +168,7 @@ Config _mergeConfigs(Config base, Config override) => Config(
 Config _applyEnvOverrides(Config config) {
   final env = Platform.environment;
   return config.copyWith(
-    worktreePath: env['DOJJO_WORKTREE_PATH'] ?? config.worktreePath,
+    workspacePath: env['DOJJO_WORKSPACE_PATH'] ?? config.workspacePath,
     merge: config.merge.copyWith(
       squash: _envBool(env, 'DOJJO_MERGE__SQUASH') ?? config.merge.squash,
       rebase: _envBool(env, 'DOJJO_MERGE__REBASE') ?? config.merge.rebase,

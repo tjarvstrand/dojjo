@@ -9,7 +9,7 @@ import 'package:dojjo/src/prompt.dart';
 class RemoveCommand extends Command<void> {
   RemoveCommand(this._config) {
     argParser
-      ..addFlag('yes', abbr: 'y', defaultsTo: false)
+      ..addFlag('yes', abbr: 'y', defaultsTo: false, help: 'Skip confirmation prompts')
       ..addFlag('keep-bookmark', defaultsTo: false)
       ..addFlag('skip-hooks', defaultsTo: false, help: 'Skip hooks');
   }

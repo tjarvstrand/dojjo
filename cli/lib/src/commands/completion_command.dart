@@ -35,7 +35,7 @@ const _bash = r'''_djo_complete() {
   COMPREPLY=()
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD-1]}"
-  commands="completion config copy-ignored for-each help hook list merge prune push remove shell switch update-stale"
+  commands="config copy-ignored for-each help hook list merge prune remove shell switch update-stale"
 
   case "${COMP_WORDS[1]}" in
     switch|remove|copy-ignored|hook)
@@ -48,8 +48,8 @@ const _bash = r'''_djo_complete() {
       COMPREPLY=( $(compgen -W "$(jj bookmark list --no-pager -T 'name ++ "\n"' 2>/dev/null)" -- "$cur") )
       return 0
       ;;
-    shell|completion)
-      COMPREPLY=( $(compgen -W "bash zsh fish pwsh" -- "$cur") )
+    shell)
+      COMPREPLY=( $(compgen -W "completion init install" -- "$cur") )
       return 0
       ;;
   esac
@@ -65,7 +65,6 @@ const _zsh = r'''#compdef djo
 _djo() {
   local -a commands
   commands=(
-    'completion:Output shell completion script'
     'config:Configuration management'
     'copy-ignored:Copy untracked files between workspaces'
     'for-each:Run a command in every workspace'
@@ -74,7 +73,6 @@ _djo() {
     'list:List all jj workspaces'
     'merge:Squash, rebase, move bookmark, and clean up'
     'prune:Remove merged workspaces'
-    'push:Push bookmarks to remote'
     'remove:Forget a workspace and delete its directory'
     'shell:Shell integration commands'
     'switch:Create or switch to a workspace'
@@ -105,8 +103,8 @@ _djo() {
           bookmarks=(${(f)"$(jj bookmark list --no-pager -T 'name ++ "\n"' 2>/dev/null)"})
           _describe 'bookmark' bookmarks
           ;;
-        shell|completion)
-          _describe 'shell' '(bash zsh fish pwsh)'
+        shell)
+          _describe 'subcommand' '(completion init install)'
           ;;
       esac
       ;;
@@ -118,7 +116,6 @@ _djo "$@"''';
 const _fish = r'''complete -c djo -f
 
 # Commands
-complete -c djo -n __fish_use_subcommand -a completion -d 'Output shell completion script'
 complete -c djo -n __fish_use_subcommand -a config -d 'Configuration management'
 complete -c djo -n __fish_use_subcommand -a copy-ignored -d 'Copy untracked files between workspaces'
 complete -c djo -n __fish_use_subcommand -a for-each -d 'Run a command in every workspace'
@@ -127,7 +124,6 @@ complete -c djo -n __fish_use_subcommand -a hook -d 'Manually run hooks'
 complete -c djo -n __fish_use_subcommand -a list -d 'List all jj workspaces'
 complete -c djo -n __fish_use_subcommand -a merge -d 'Squash, rebase, move bookmark, and clean up'
 complete -c djo -n __fish_use_subcommand -a prune -d 'Remove merged workspaces'
-complete -c djo -n __fish_use_subcommand -a push -d 'Push bookmarks to remote'
 complete -c djo -n __fish_use_subcommand -a remove -d 'Forget a workspace and delete its directory'
 complete -c djo -n __fish_use_subcommand -a shell -d 'Shell integration commands'
 complete -c djo -n __fish_use_subcommand -a switch -d 'Create or switch to a workspace'
@@ -144,13 +140,12 @@ end
 # Bookmark completions for merge
 complete -c djo -n '__fish_seen_subcommand_from merge' -a "(jj bookmark list --no-pager -T 'name ++ \"\n\"' 2>/dev/null)"
 
-# Shell completions
-complete -c djo -n '__fish_seen_subcommand_from shell completion' -a 'bash zsh fish pwsh' ''';
+# Shell subcommands
+complete -c djo -n '__fish_seen_subcommand_from shell' -a 'completion init install' ''';
 
 const _pwsh = r'''Register-ArgumentCompleter -CommandName djo -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
   $commands = @(
-    @{Name='completion'; Tooltip='Output shell completion script'}
     @{Name='config'; Tooltip='Configuration management'}
     @{Name='copy-ignored'; Tooltip='Copy untracked files between workspaces'}
     @{Name='for-each'; Tooltip='Run a command in every workspace'}
@@ -159,7 +154,6 @@ const _pwsh = r'''Register-ArgumentCompleter -CommandName djo -ScriptBlock {
     @{Name='list'; Tooltip='List all jj workspaces'}
     @{Name='merge'; Tooltip='Squash, rebase, move bookmark, and clean up'}
     @{Name='prune'; Tooltip='Remove merged workspaces'}
-    @{Name='push'; Tooltip='Push bookmarks to remote'}
     @{Name='remove'; Tooltip='Forget a workspace and delete its directory'}
     @{Name='shell'; Tooltip='Shell integration commands'}
     @{Name='switch'; Tooltip='Create or switch to a workspace'}

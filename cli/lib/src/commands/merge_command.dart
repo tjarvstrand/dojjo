@@ -11,7 +11,7 @@ import 'package:path/path.dart' as p;
 class MergeCommand extends Command<void> {
   MergeCommand(this._config) {
     argParser
-      ..addFlag('yes', abbr: 'y', defaultsTo: false)
+      ..addFlag('yes', abbr: 'y', defaultsTo: false, help: 'Skip confirmation prompts')
       ..addFlag('push', defaultsTo: false, help: 'Push target bookmark after merge')
       ..addFlag('skip-hooks', defaultsTo: false, help: 'Skip hooks');
   }

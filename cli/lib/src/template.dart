@@ -17,7 +17,7 @@ final _environment = Environment(
 String render(String template, Map<String, Object?> context) => _environment.fromString(template).render(context);
 
 /// Render a template with standard workspace variables.
-/// For simple contexts (worktree-path, aliases) where async jj calls aren't needed.
+/// For simple contexts (workspace-path, aliases) where async jj calls aren't needed.
 String renderTemplate(String template, {required String name, required String repoPath}) => render(template, {
   'name': name,
   'branch': name,

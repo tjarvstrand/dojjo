@@ -3,9 +3,9 @@ import 'package:test/test.dart';
 
 void main() {
   group('parseToml', () {
-    test('parses worktree-path', () {
-      final config = parseToml('worktree-path = "../{{ name }}"');
-      expect(config.worktreePath, equals('../{{ name }}'));
+    test('parses workspace-path', () {
+      final config = parseToml('workspace-path = "../{{ name }}"');
+      expect(config.workspacePath, equals('../{{ name }}'));
     });
 
     test('parses merge settings', () {
@@ -43,7 +43,7 @@ deploy = "make deploy"
 
     test('defaults for missing keys', () {
       final config = parseToml('');
-      expect(config.worktreePath, isEmpty);
+      expect(config.workspacePath, isEmpty);
       expect(config.merge.squash, isTrue);
       expect(config.merge.rebase, isTrue);
       expect(config.merge.remove, isTrue);
@@ -130,7 +130,7 @@ test = "cargo test"
     test('ignores unknown keys gracefully', () {
       // worktrunk-only keys should not cause errors
       final config = parseToml('''
-worktree-path = "test"
+workspace-path = "test"
 
 [commit]
 stage = "all"
@@ -138,23 +138,23 @@ stage = "all"
 [ci]
 platform = "github"
 ''');
-      expect(config.worktreePath, equals('test'));
+      expect(config.workspacePath, equals('test'));
     });
   });
 
   group('mergeConfigs', () {
     test('override replaces non-empty values', () {
-      final base = parseToml('worktree-path = "base"');
-      final override = parseToml('worktree-path = "override"');
+      final base = parseToml('workspace-path = "base"');
+      final override = parseToml('workspace-path = "override"');
       final merged = mergeConfigs(base, override);
-      expect(merged.worktreePath, equals('override'));
+      expect(merged.workspacePath, equals('override'));
     });
 
     test('base preserved when override is empty', () {
-      final base = parseToml('worktree-path = "base"');
+      final base = parseToml('workspace-path = "base"');
       final override = parseToml('');
       final merged = mergeConfigs(base, override);
-      expect(merged.worktreePath, equals('base'));
+      expect(merged.workspacePath, equals('base'));
     });
 
     test('aliases are merged with override taking precedence', () {
