@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 
-import 'package:dojjo/src/jj.dart' as jj;
+import 'package:dojjo/src/jj.dart';
+import 'package:dojjo/src/util/extensions.dart';
 
 class UpdateStaleCommand extends Command<void> {
   @override
@@ -13,9 +14,6 @@ class UpdateStaleCommand extends Command<void> {
 
   @override
   Future<void> run() async {
-    final output = await jj.workspaceUpdateStale();
-    if (output.isNotEmpty) {
-      stdout.writeln(output);
-    }
+    (await workspaceUpdateStale())?.let(stdout.writeln);
   }
 }

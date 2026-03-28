@@ -1,7 +1,7 @@
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:dojjo/src/jj.dart' as jj;
+import 'package:dojjo/src/jj.dart';
+import 'package:dojjo/src/util/extensions.dart';
 import 'package:jinja/jinja.dart';
 import 'package:path/path.dart' as p;
 
@@ -59,49 +59,50 @@ Future<Map<String, Object?>> buildFullContext({
 
   // Commit info.
   try {
-    final commitId = await jj.logTemplate('@', 'commit_id');
+    final commitId = await logTemplate('@', 'commit_id');
     context['commit'] = commitId;
     context['short_commit'] = commitId.length >= 7 ? commitId.substring(0, 7) : commitId;
-  } on jj.CommandError {
+  } on CommandError {
     context['commit'] = '';
     context['short_commit'] = '';
   }
 
   // Remote info.
   try {
-    final remoteOutput = await jj.gitRemoteList();
-    final lines = const LineSplitter().convert(remoteOutput).where((l) => l.isNotEmpty);
-    if (lines.isNotEmpty) {
-      final parts = lines.first.split(RegExp(r'\s+'));
-      context['remote'] = parts.first;
-      if (parts.length > 1) {
-        context['remote_url'] = parts[1];
+    final remoteOutput = await gitRemoteList();
+    final parts = remoteOutput?.nonEmptyLines.firstOrNull?.split(RegExp(r'\s+')).nonEmptyOrNull;
+    final remote = parts?.firstOrNull;
+    if (remote != null) {
+      context['remote'] = remote;
+      final url = parts?.elementAtOrNull(1);
+      if (url != null) {
+        context['remote_url'] = url;
       }
     }
-  } on jj.CommandError {
+  } on CommandError {
     // No remotes.
   }
 
   // Default branch / primary worktree.
   try {
-    final defaultBranch = await jj.logTemplate('trunk()', 'bookmarks');
+    final defaultBranch = await logTemplate('trunk()', 'bookmarks');
     context['default_branch'] = defaultBranch;
     context['base'] = defaultBranch;
-  } on jj.CommandError {
+  } on CommandError {
     // No trunk.
   }
 
   // Primary (default) workspace/worktree path.
   try {
-    final primaryPath = await jj.workspaceRoot('default');
+    final primaryPath = await workspaceRoot('default');
     context['primary_worktree_path'] = primaryPath;
     context['primary_workspace_path'] = primaryPath;
-  } on jj.CommandError {
+  } on CommandError {
     try {
-      final primaryPath = await jj.workspaceRoot();
+      final primaryPath = await workspaceRoot();
       context['primary_worktree_path'] = primaryPath;
       context['primary_workspace_path'] = primaryPath;
-    } on jj.CommandError {
+    } on CommandError {
       // Can't determine primary workspace.
     }
   }
@@ -113,23 +114,19 @@ Future<Map<String, Object?>> buildFullContext({
   }
 
   // Upstream.
-  try {
-    final remote = context['remote'] as String?;
-    if (remote != null) {
-      context['upstream'] = '$name@$remote';
-    }
-  } on jj.CommandError {
-    // No upstream.
+  final remote = context['remote'];
+  if (remote != null) {
+    context['upstream'] = '$name@$remote';
   }
 
   // Target (merge target, if provided).
   if (target != null) {
     context['target'] = target;
     try {
-      final targetPath = await jj.workspaceRoot(target);
+      final targetPath = await workspaceRoot(target);
       context['target_worktree_path'] = targetPath;
       context['target_workspace_path'] = targetPath;
-    } on jj.CommandError {
+    } on CommandError {
       // Target workspace may not exist.
     }
   }

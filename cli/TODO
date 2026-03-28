@@ -1,0 +1,2 @@
+  - Put skip hooks in config
+  - Only call exit from entrypoint

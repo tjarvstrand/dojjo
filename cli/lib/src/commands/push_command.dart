@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
-
-import 'package:dojjo/src/jj.dart' as jj;
+import 'package:dojjo/src/jj.dart';
+import 'package:dojjo/src/util/extensions.dart';
 
 class PushCommand extends Command<void> {
   PushCommand() {
@@ -20,26 +20,19 @@ class PushCommand extends Command<void> {
     final all = argResults!.flag('all');
 
     if (all) {
-      final output = await jj.gitPush(all: true);
-      if (output.isNotEmpty) {
-        stderr.writeln(output);
-      }
+      (await gitPush(all: true))?.let(stderr.writeln);
       return;
     }
 
     // Push the current workspace's bookmark.
-    final workspaces = await jj.workspaceListRich();
+    final workspaces = await workspaceListRich();
     final current = workspaces.where((workspace) => workspace.current).firstOrNull;
     if (current == null || current.bookmarks.isEmpty) {
-      stderr.writeln('No bookmark found for current workspace.');
-      exit(1);
+      throw Exception('No bookmark found for current workspace.');
     }
 
     // Use the first bookmark if multiple are present.
     final bookmark = current.bookmarks.split(',').first;
-    final output = await jj.gitPush(bookmark: bookmark);
-    if (output.isNotEmpty) {
-      stderr.writeln(output);
-    }
+    (await gitPush(bookmark: bookmark))?.let(stderr.writeln);
   }
 }

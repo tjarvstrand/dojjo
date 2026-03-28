@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 
 import 'package:dojjo/src/config.dart';
-import 'package:dojjo/src/hooks.dart' as hooks;
-import 'package:dojjo/src/jj.dart' as jj;
+import 'package:dojjo/src/hooks.dart';
+import 'package:dojjo/src/jj.dart';
 
 class HookCommand extends Command<void> {
   HookCommand(this._config);
@@ -33,11 +33,11 @@ class HookCommand extends Command<void> {
       return;
     }
 
-    final root = await jj.workspaceRoot();
-    final workspaces = await jj.workspaceListRich();
+    final root = await workspaceRoot();
+    final workspaces = await workspaceListRich();
     final current = workspaces.where((workspace) => workspace.current).firstOrNull;
     final workspaceName = current?.name ?? 'default';
 
-    await hooks.runHooks(hookType, hooks: _config.hooks, name: workspaceName, path: root);
+    await runHooks(hookType, hooks: _config.hooks, name: workspaceName, path: root);
   }
 }

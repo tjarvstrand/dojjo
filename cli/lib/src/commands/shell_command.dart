@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 
-import 'package:dojjo/src/shell_integration.dart' as shell;
+import 'package:dojjo/src/shell_integration.dart';
 
 class ShellCommand extends Command<void> {
   ShellCommand() {
@@ -30,7 +30,7 @@ class ShellInitCommand extends Command<void> {
     if (rest.isEmpty) {
       usageException('Missing required argument: <shell>');
     }
-    stdout.writeln(shell.initScript(rest.first));
+    stdout.writeln(initScript(rest.first));
   }
 }
 
@@ -48,8 +48,8 @@ class ShellInstallCommand extends Command<void> {
       usageException('Missing required argument: <shell>');
     }
     final shellName = rest.first;
-    final path = rest.length > 1 ? rest[1] : shell.defaultRcFile(shellName);
-    await shell.install(shellName, path);
+    final path = rest.length > 1 ? rest[1] : defaultRcFile(shellName);
+    await install(shellName, path);
     stdout.writeln('Added djo shell integration to $path');
   }
 }

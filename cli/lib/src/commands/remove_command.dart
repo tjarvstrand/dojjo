@@ -1,12 +1,11 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
-
 import 'package:dojjo/src/config.dart';
-import 'package:dojjo/src/hooks.dart' as hooks;
-import 'package:dojjo/src/jj.dart' as jj;
-import 'package:dojjo/src/prompt.dart' as prompt;
-import 'package:dojjo/src/state.dart' as state;
+import 'package:dojjo/src/hooks.dart';
+import 'package:dojjo/src/jj.dart';
+import 'package:dojjo/src/prompt.dart';
+import 'package:dojjo/src/state.dart';
 
 class RemoveCommand extends Command<void> {
   RemoveCommand(this._config) {
@@ -35,31 +34,28 @@ class RemoveCommand extends Command<void> {
     }
     final name = rest.first;
 
-    final root = await jj.workspaceRoot(name);
-    final message = keepBookmark
-        ? "Will forget workspace '$name' and delete $root"
-        : "Will forget workspace '$name', delete bookmark, and delete $root";
-    stderr.writeln(message);
-    await prompt.confirmOrAbort('Proceed?', yes: yes);
+    final root = await workspaceRoot(name);
+    stderr.writeln("Will forget workspace '$name'${keepBookmark ? '' : ', delete bookmark'}, and delete $root");
+    await confirmOrAbort('Proceed?', yes: yes);
 
     if (!skipHooks) {
-      await hooks.runHooks('pre-remove', hooks: _config.hooks, name: name, path: root);
+      await runHooks('pre-remove', hooks: _config.hooks, name: name, path: root);
     }
 
-    await jj.workspaceForget(name);
+    await workspaceForget(name);
     if (!keepBookmark) {
       try {
-        await jj.bookmarkDelete(name);
-      } on jj.CommandError {
+        await bookmarkDelete(name);
+      } on CommandError {
         // ignore: bookmark may not exist
       }
     }
-    await jj.deleteDirectory(root);
-    await state.removeWorkspaceIndex(name);
+    await deleteDirectory(root);
+    await removeWorkspaceIndex(name);
     stderr.writeln("Removed workspace '$name'");
 
     if (!skipHooks) {
-      await hooks.runHooks('post-remove', hooks: _config.hooks, name: name, path: root);
+      await runHooks('post-remove', hooks: _config.hooks, name: name, path: root);
     }
   }
 }

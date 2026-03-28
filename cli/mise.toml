@@ -38,5 +38,8 @@ run = "dart analyze --fatal-infos"
 
 [tasks.format-check]
 description = "Check formatting"
-depends = ["deps"]
 run = "dart format --output=none --set-exit-if-changed ."
+
+[tasks.check]
+description = "Analyze and check formatting"
+depends = ["analyze", "format-check"]

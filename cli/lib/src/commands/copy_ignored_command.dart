@@ -1,9 +1,10 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:dojjo/src/config.dart';
-import 'package:dojjo/src/jj.dart' as jj;
+import 'package:dojjo/src/jj.dart';
+import 'package:dojjo/src/platform.dart';
+import 'package:dojjo/src/util/extensions.dart';
 import 'package:path/path.dart' as p;
 
 /// Built-in directories that are always excluded from copying.
@@ -52,8 +53,8 @@ class CopyIgnoredCommand extends Command<void> {
     final dryRun = argResults!.flag('dry-run');
     final force = argResults!.flag('force');
 
-    final sourcePath = await jj.workspaceRoot(from);
-    final targetPath = to != null ? await jj.workspaceRoot(to) : await jj.workspaceRoot();
+    final sourcePath = await workspaceRoot(from);
+    final targetPath = to != null ? await workspaceRoot(to) : await workspaceRoot();
 
     final untrackedFiles = await _listUntracked(sourcePath);
     if (untrackedFiles.isEmpty) {
@@ -63,12 +64,12 @@ class CopyIgnoredCommand extends Command<void> {
 
     // Apply .worktreeinclude filter if present.
     final includePatterns = await _loadWorktreeInclude(sourcePath);
-    final filtered = includePatterns != null
+    final filtered = includePatterns.isNotEmpty
         ? untrackedFiles.where((file) => _matchesAny(file, includePatterns)).toList()
         : untrackedFiles;
 
     // Group to top-level entries for efficient copying.
-    final topLevel = _topLevelEntries(filtered);
+    final topLevel = {for (final path in filtered) p.split(path).first};
     final excludes = _allExcludes();
 
     var copied = 0;
@@ -117,79 +118,65 @@ class CopyIgnoredCommand extends Command<void> {
   List<String> _allExcludes() => [
     ..._builtinExcludes,
     ..._config.copyIgnored.exclude.map(
+      // Ignore-files use / on all platforms
       (pattern) => pattern.endsWith('/') ? pattern.substring(0, pattern.length - 1) : pattern,
     ),
   ];
 
-  Set<String> _topLevelEntries(List<String> paths) {
-    final entries = <String>{};
-    for (final path in paths) {
-      entries.add(p.split(path).first);
-    }
-    return entries;
-  }
-
   bool _matchesAny(String path, List<String> patterns) => patterns.any((pattern) {
+    // Ignore-files use / on all platforms
     if (pattern.endsWith('/')) {
       return path.startsWith(pattern) || path.startsWith(pattern.substring(0, pattern.length - 1));
     }
     return path == pattern || path.startsWith('$pattern/');
   });
 
-  Future<List<String>?> _loadWorktreeInclude(String workspacePath) async {
+  Future<List<String>> _loadWorktreeInclude(String workspacePath) async {
     final file = File(p.join(workspacePath, '.worktreeinclude'));
-    if (!await file.exists()) return null;
+    if (!await file.exists()) return [];
     final content = await file.readAsString();
-    return const LineSplitter()
-        .convert(content)
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty && !line.startsWith('#'))
-        .toList();
+    return content.nonEmptyLines.where((line) => !line.startsWith('#')).toList();
   }
 
   Future<List<String>> _listUntracked(String workspacePath) async {
-    final allFiles = await _listFilesRecursive(workspacePath, workspacePath);
+    final allFiles = _listFilesRecursive(workspacePath, workspacePath, _allExcludes());
 
-    final result = await Process.run('jj', ['file', 'list'], workingDirectory: workspacePath);
-    if (result.exitCode != 0) return [];
-    final tracked = const LineSplitter().convert(result.stdout as String).where((line) => line.isNotEmpty).toSet();
+    final result = await runProcess('jj', ['file', 'list'], workingDirectory: workspacePath);
+    if (result.exitCode != 0) {
+      result.stderr?.let(stderr.writeln);
+      return [];
+    }
+    final tracked = result.stdout?.nonEmptyLines.toSet() ?? {};
 
     return allFiles.where((file) => !tracked.contains(file)).toList();
   }
 
-  Future<List<String>> _listFilesRecursive(String root, String current) async {
-    final result = <String>[];
-    final dir = Directory(current);
-    final excludes = _allExcludes();
-    await for (final entity in dir.list()) {
-      final relative = p.relative(entity.path, from: root);
-      final topLevel = p.split(relative).first;
-      if (excludes.contains(topLevel)) continue;
-      if (entity is File) {
-        result.add(relative);
-      } else if (entity is Directory) {
-        result.addAll(await _listFilesRecursive(root, entity.path));
-      }
-    }
-    return result;
-  }
+  Iterable<String> _listFilesRecursive(String root, String current, List<String> excludes) =>
+      Directory(current).listSync().expand((entity) sync* {
+        final relative = p.relative(entity.path, from: root);
+        final topLevel = p.split(relative).first;
+        if (excludes.contains(topLevel)) return;
+        if (entity is File) {
+          yield relative;
+        } else if (entity is Directory) {
+          yield* _listFilesRecursive(root, entity.path, excludes);
+        }
+      });
 
   Future<void> _copy(String source, String target) async {
     await Directory(p.dirname(target)).create(recursive: true);
+    final result = await _runCopy(source, target);
+    final failed = Platform.isWindows ? result.exitCode > 7 : result.exitCode != 0;
+    if (failed) {
+      stderr.writeln('Failed to copy $source: ${result.stderr}');
+    }
+  }
 
-    final ProcessResult result;
+  Future<ShellResult> _runCopy(String source, String target) {
     if (Platform.isWindows) {
       // robocopy uses exit code 1 for success with files copied.
-      result = await Process.run('robocopy', [source, target, '/E', '/NFL', '/NDL', '/NJH', '/NJS']);
-      if (result.exitCode > 7) {
-        stderr.writeln('Failed to copy $source: ${(result.stderr as String).trim()}');
-      }
-    } else {
-      final args = ['-R', if (Platform.isMacOS) '-c', source, target];
-      result = await Process.run('cp', args);
-      if (result.exitCode != 0) {
-        stderr.writeln('Failed to copy $source: ${(result.stderr as String).trim()}');
-      }
+      return runProcess('robocopy', [source, target, '/E', '/NFL', '/NDL', '/NJH', '/NJS']);
     }
+    return runProcess('cp', ['-R', if (Platform.isMacOS) '-c', source, target]);
   }
 }

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:dojjo/src/config.dart';
 import 'package:dojjo/src/platform.dart';
 import 'package:dojjo/src/template.dart';
+import 'package:dojjo/src/util/extensions.dart';
 
 final _wtStepPattern = RegExp(r'\bwt\s+step\s+');
 final _wtPattern = RegExp(r'\bwt\s+');
@@ -82,15 +83,8 @@ Future<void> _runEntry(
 
   final result = await runShellCommand(rendered, workingDirectory: workingDirectory);
 
-  final output = (result.stdout as String).trim();
-  if (output.isNotEmpty) {
-    stderr.writeln(output);
-  }
-
-  final error = (result.stderr as String).trim();
-  if (error.isNotEmpty) {
-    stderr.writeln(error);
-  }
+  result.stdout?.let(stderr.writeln);
+  result.stderr?.let(stderr.writeln);
 
   if (result.exitCode != 0) {
     if (blocking) {

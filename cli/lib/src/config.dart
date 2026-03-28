@@ -1,11 +1,13 @@
 import 'dart:io';
 
 import 'package:dojjo/src/platform.dart';
+import 'package:dojjo/src/util/extensions.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:path/path.dart' as p;
 import 'package:toml/toml.dart';
 
 part 'config.freezed.dart';
+part 'config.g.dart';
 
 @freezed
 sealed class MergeConfig with _$MergeConfig {
@@ -16,11 +18,15 @@ sealed class MergeConfig with _$MergeConfig {
     @Default(true) bool verify,
     @Default(false) bool push,
   }) = _MergeConfig;
+
+  factory MergeConfig.fromJson(Map<String, Object?> json) => _$MergeConfigFromJson(json);
 }
 
 @freezed
 sealed class ListConfig with _$ListConfig {
   const factory ListConfig({@Default('') String url}) = _ListConfig;
+
+  factory ListConfig.fromJson(Map<String, Object?> json) => _$ListConfigFromJson(json);
 }
 
 /// A single hook command with a name.
@@ -41,6 +47,8 @@ typedef HookMap = Map<String, HookPipeline>;
 @freezed
 sealed class CopyIgnoredConfig with _$CopyIgnoredConfig {
   const factory CopyIgnoredConfig({@Default(<String>[]) List<String> exclude}) = _CopyIgnoredConfig;
+
+  factory CopyIgnoredConfig.fromJson(Map<String, Object?> json) => _$CopyIgnoredConfigFromJson(json);
 }
 
 @freezed
@@ -50,17 +58,25 @@ sealed class IgnoreWorktrunkHooks with _$IgnoreWorktrunkHooks {
   const factory IgnoreWorktrunkHooks.types(List<String> types) = IgnoreWorktrunkHooksTypes;
 }
 
+Map<String, String> _aliasesFromJson(Map<String, Object?>? json) =>
+    json?.map((key, value) => MapEntry(key, value as String? ?? '')) ?? {};
+
 @freezed
 sealed class Config with _$Config {
+  @JsonSerializable(fieldRename: FieldRename.kebab)
   const factory Config({
     @Default('') String worktreePath,
     @Default(MergeConfig()) MergeConfig merge,
     @Default(ListConfig()) ListConfig list,
     @Default(CopyIgnoredConfig()) CopyIgnoredConfig copyIgnored,
-    @Default(<String, String>{}) Map<String, String> aliases,
-    @Default(<String, HookPipeline>{}) HookMap hooks,
-    @Default(IgnoreWorktrunkHooks.none()) IgnoreWorktrunkHooks ignoreWorktrunkHooks,
+    @Default(<String, String>{}) @JsonKey(fromJson: _aliasesFromJson) Map<String, String> aliases,
+    @Default(<String, HookPipeline>{}) @JsonKey(includeFromJson: false, includeToJson: false) HookMap hooks,
+    @Default(IgnoreWorktrunkHooks.none())
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    IgnoreWorktrunkHooks ignoreWorktrunkHooks,
   }) = _Config;
+
+  factory Config.fromJson(Map<String, Object?> json) => _$ConfigFromJson(json);
 }
 
 /// Sources for config values, tracked for `config show`.
@@ -100,26 +116,16 @@ HookMap _parseHooks(Map<String, Object?> hooksMap) {
 Config _parseToml(String content) {
   final doc = TomlDocument.parse(content).toMap();
 
-  final mergeMap = doc['merge'] as Map<String, Object?>? ?? {};
-  final listMap = doc['list'] as Map<String, Object?>? ?? {};
-  final stepMap = doc['step'] as Map<String, Object?>? ?? {};
-  final copyIgnoredMap = stepMap['copy-ignored'] as Map<String, Object?>? ?? {};
-  final aliasMap = doc['aliases'] as Map<String, Object?>? ?? {};
-  final hooksMap = doc['hooks'] as Map<String, Object?>? ?? {};
+  // Flatten step.copy-ignored to top level for Config.fromJson.
+  final stepMap = doc['step'];
+  if (stepMap is Map<String, Object?>) {
+    doc['copy-ignored'] = stepMap['copy-ignored'];
+  }
 
-  return Config(
-    worktreePath: doc['worktree-path'] as String? ?? '',
-    merge: MergeConfig(
-      squash: mergeMap['squash'] as bool? ?? true,
-      rebase: mergeMap['rebase'] as bool? ?? true,
-      remove: mergeMap['remove'] as bool? ?? true,
-      verify: mergeMap['verify'] as bool? ?? true,
-      push: mergeMap['push'] as bool? ?? false,
-    ),
-    list: ListConfig(url: listMap['url'] as String? ?? ''),
-    copyIgnored: CopyIgnoredConfig(exclude: (copyIgnoredMap['exclude'] as List<Object?>?)?.cast<String>() ?? []),
-    aliases: aliasMap.map((key, value) => MapEntry(key, value as String? ?? '')),
-    hooks: _parseHooks(hooksMap),
+  final config = Config.fromJson(doc);
+  final hooksMap = doc['hooks'];
+  return config.copyWith(
+    hooks: hooksMap is Map<String, Object?> ? _parseHooks(hooksMap) : const {},
     ignoreWorktrunkHooks: _parseIgnoreWorktrunkHooks(doc['ignore-worktrunk-hooks']),
   );
 }
@@ -141,7 +147,7 @@ HookMap _mergeHooks(HookMap base, HookMap override) {
 }
 
 Config _mergeConfigs(Config base, Config override) => Config(
-  worktreePath: override.worktreePath.isNotEmpty ? override.worktreePath : base.worktreePath,
+  worktreePath: override.worktreePath.nonEmptyOrNull ?? base.worktreePath,
   merge: MergeConfig(
     squash: override.merge.squash,
     rebase: override.merge.rebase,
@@ -149,7 +155,7 @@ Config _mergeConfigs(Config base, Config override) => Config(
     verify: override.merge.verify,
     push: override.merge.push,
   ),
-  list: ListConfig(url: override.list.url.isNotEmpty ? override.list.url : base.list.url),
+  list: ListConfig(url: override.list.url.nonEmptyOrNull ?? base.list.url),
   copyIgnored: CopyIgnoredConfig(exclude: {...base.copyIgnored.exclude, ...override.copyIgnored.exclude}.toList()),
   aliases: {...base.aliases, ...override.aliases},
   hooks: _mergeHooks(base.hooks, override.hooks),

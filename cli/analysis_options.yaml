@@ -8,6 +8,9 @@ analyzer:
     strict-casts: true
     strict-inference: true
     strict-raw-types: true
+  errors:
+    # freezed places @JsonSerializable on factory constructors for code generation.
+    invalid_annotation_target: ignore
 
 linter:
   rules:

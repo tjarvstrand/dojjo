@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 
 import 'package:dojjo/src/config.dart';
-import 'package:dojjo/src/hooks.dart' as hooks;
-import 'package:dojjo/src/jj.dart' as jj;
-import 'package:dojjo/src/prompt.dart' as prompt;
+import 'package:dojjo/src/hooks.dart';
+import 'package:dojjo/src/jj.dart';
+import 'package:dojjo/src/prompt.dart';
 import 'package:path/path.dart' as p;
 
 class MergeCommand extends Command<void> {
@@ -24,7 +24,7 @@ class MergeCommand extends Command<void> {
   @override
   String get description => 'Squash, rebase onto target, move bookmark, and clean up workspace';
 
-  Future<void> _step(String name, Future<String> Function() effect) async {
+  Future<void> _step(String name, Future<void> Function() effect) async {
     try {
       await effect();
     } on Exception catch (err) {
@@ -44,36 +44,36 @@ class MergeCommand extends Command<void> {
     }
     final target = rest.first;
 
-    final root = await jj.workspaceRoot();
+    final root = await workspaceRoot();
     stderr.writeln("Will squash, rebase onto '$target', move bookmark, and delete $root");
-    await prompt.confirmOrAbort('Proceed?', yes: yes);
+    await confirmOrAbort('Proceed?', yes: yes);
 
     if (!skipHooks) {
-      await hooks.runHooks('pre-merge', hooks: _config.hooks, name: target, path: root, target: target);
+      await runHooks('pre-merge', hooks: _config.hooks, name: target, path: root, target: target);
     }
 
     if (_config.merge.squash) {
-      await _step('squash', jj.squash);
+      await _step('squash', squash);
     }
     if (_config.merge.rebase) {
-      await _step('rebase', () => jj.rebase(target));
+      await _step('rebase', () => rebase(target));
     }
-    await _step('bookmark set', () => jj.bookmarkSet(target, '@-'));
-    await _step('workspace forget', () => jj.workspaceForget('@'));
+    await _step('bookmark set', () => bookmarkSet(target, '@-'));
+    await _step('workspace forget', () => workspaceForget('@'));
     if (_config.merge.remove) {
-      await jj.deleteDirectory(root);
+      await deleteDirectory(root);
     }
 
     final shouldPush = argResults!.flag('push') || _config.merge.push;
     if (shouldPush) {
-      await _step('push', () => jj.gitPush(bookmark: target));
+      await _step('push', () => gitPush(bookmark: target));
     }
 
     final parentDir = p.dirname(root);
     stdout.writeln(parentDir);
 
     if (!skipHooks) {
-      await hooks.runHooks('post-merge', hooks: _config.hooks, name: target, path: parentDir, target: target);
+      await runHooks('post-merge', hooks: _config.hooks, name: target, path: parentDir, target: target);
     }
   }
 }

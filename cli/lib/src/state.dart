@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dojjo/src/jj.dart' as jj;
+import 'package:dojjo/src/jj.dart';
+import 'package:dojjo/src/util/extensions.dart';
 import 'package:path/path.dart' as p;
 
 Future<String> _jjDir() async {
-  final root = await jj.workspaceRoot();
+  final root = await workspaceRoot();
   return p.join(root, '.jj');
 }
 
@@ -17,7 +18,7 @@ Future<String?> loadPreviousWorkspace() async {
     final file = File(path);
     if (await file.exists()) {
       final content = (await file.readAsString()).trim();
-      return content.isNotEmpty ? content : null;
+      return content.nonEmptyOrNull;
     }
   } on Exception {
     // Best-effort.

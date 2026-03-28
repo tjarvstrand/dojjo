@@ -1,14 +1,15 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
-
+import 'package:collection/collection.dart';
 import 'package:dojjo/src/config.dart';
-import 'package:dojjo/src/hooks.dart' as hooks;
-import 'package:dojjo/src/jj.dart' as jj;
+import 'package:dojjo/src/hooks.dart';
+import 'package:dojjo/src/jj.dart';
 import 'package:dojjo/src/platform.dart';
-import 'package:dojjo/src/prompt.dart' as prompt;
-import 'package:dojjo/src/state.dart' as state;
+import 'package:dojjo/src/prompt.dart';
+import 'package:dojjo/src/state.dart';
 import 'package:dojjo/src/template.dart';
+import 'package:dojjo/src/util/extensions.dart';
 import 'package:path/path.dart' as p;
 
 class SwitchCommand extends Command<void> {
@@ -29,16 +30,16 @@ class SwitchCommand extends Command<void> {
   String get description => 'Create or switch to a jj workspace';
 
   Future<String> _createWorkspace(String name, {String? revision}) async {
-    final root = await jj.workspaceRoot();
-    final index = await state.workspaceIndex(name);
+    final root = await workspaceRoot();
+    final index = await workspaceIndex(name);
     final path = _config.worktreePath.isNotEmpty
         ? renderTemplate(_config.worktreePath, name: name, repoPath: root, workspaceIndex: index)
         : p.join(root, '..', name);
-    await jj.workspaceAdd(path, name: name, revision: revision);
-    await jj.bookmarkCreate(name);
+    await workspaceAdd(path, name: name, revision: revision);
+    await bookmarkCreate(name);
     try {
-      await jj.bookmarkTrack(name, remote: 'origin');
-    } on jj.CommandError {
+      await bookmarkTrack(name, remote: 'origin');
+    } on CommandError {
       // Remote may not exist yet — that's fine.
     }
     return path;
@@ -47,18 +48,12 @@ class SwitchCommand extends Command<void> {
   Future<void> _executeInWorkspace(String command, String path) async {
     final rendered = renderTemplate(command, name: p.basename(path), repoPath: path);
     final result = await runShellCommand(rendered, workingDirectory: path);
-    final output = (result.stdout as String).trim();
-    if (output.isNotEmpty) {
-      stderr.writeln(output);
-    }
-    final error = (result.stderr as String).trim();
-    if (error.isNotEmpty) {
-      stderr.writeln(error);
-    }
+    result.stdout?.let(stderr.writeln);
+    result.stderr?.let(stderr.writeln);
   }
 
   Future<String?> _pickWorkspace() async {
-    final workspaces = await jj.workspaceListRich();
+    final workspaces = await workspaceListRich();
     if (workspaces.isEmpty) {
       stderr.writeln('No workspaces found.');
       return null;
@@ -84,12 +79,10 @@ class SwitchCommand extends Command<void> {
     }
 
     // Fallback: numbered list.
-    for (var i = 0; i < lines.length; i++) {
-      stderr.writeln('  ${i + 1}) ${lines[i]}');
-    }
+    lines.forEachIndexed((i, line) => stderr.writeln('  ${i + 1}) $line'));
+
     stderr.write('Select workspace [1-${lines.length}]: ');
-    final input2 = stdin.readLineSync();
-    final index = int.tryParse(input2 ?? '');
+    final index = stdin.readLineSync()?.let(int.tryParse);
     if (index == null || index < 1 || index > lines.length) {
       return null;
     }
@@ -98,7 +91,15 @@ class SwitchCommand extends Command<void> {
 
   Future<void> _runHook(String hookType, String name, String path, {int? workspaceIndex}) async {
     if (argResults!.flag('skip-hooks')) return;
-    await hooks.runHooks(hookType, hooks: _config.hooks, name: name, path: path, workspaceIndex: workspaceIndex);
+    await runHooks(hookType, hooks: _config.hooks, name: name, path: path, workspaceIndex: workspaceIndex);
+  }
+
+  Future<String> _previousWorkspace() async {
+    final previous = await loadPreviousWorkspace();
+    if (previous == null) {
+      throw Exception('No previous workspace.');
+    }
+    return previous;
   }
 
   @override
@@ -112,51 +113,32 @@ class SwitchCommand extends Command<void> {
       usageException('Missing required argument: <name>');
     }
 
-    String name;
-    if (rest.isEmpty) {
-      final picked = await _pickWorkspace();
-      if (picked == null) {
-        throw Exception('Aborted');
-      }
-      name = picked;
-    } else {
-      name = rest.first;
-    }
-    if (name == '-') {
-      final previous = await state.loadPreviousWorkspace();
-      if (previous == null) {
-        stderr.writeln('No previous workspace.');
-        exit(1);
-      }
-      name = previous;
-    }
+    final nameArg = rest.firstOrNull ?? (await _pickWorkspace() ?? (throw Exception('Aborted')));
+    final name = nameArg == '-' ? await _previousWorkspace() : nameArg;
 
     // Save current workspace as "previous" before switching.
-    final workspaces = await jj.workspaceListRich();
-    final current = workspaces.where((workspace) => workspace.current).firstOrNull;
-    if (current != null) {
-      await state.savePreviousWorkspace(current.name);
-    }
+    final workspaces = await workspaceListRich();
+    await workspaces.where((workspace) => workspace.current).firstOrNull?.name.let(savePreviousWorkspace);
 
     String path;
     if (create) {
       await _runHook('pre-start', name, '.');
       path = await _createWorkspace(name, revision: base);
-      final index = await state.workspaceIndex(name);
+      final index = await workspaceIndex(name);
       stdout.writeln(path);
       await _runHook('post-start', name, path, workspaceIndex: index);
     } else {
       await _runHook('pre-switch', name, '.');
       try {
-        path = await jj.workspaceRoot(name);
-      } on jj.CommandError {
-        final confirmed = await prompt.confirm("Workspace '$name' not found. Create it?");
+        path = await workspaceRoot(name);
+      } on CommandError {
+        final confirmed = await confirm("Workspace '$name' not found. Create it?");
         if (!confirmed) {
           throw Exception('Aborted');
         }
         await _runHook('pre-start', name, '.');
         path = await _createWorkspace(name, revision: base);
-        final index = await state.workspaceIndex(name);
+        final index = await workspaceIndex(name);
         stdout.writeln(path);
         await _runHook('post-start', name, path, workspaceIndex: index);
         await _runHook('post-switch', name, path, workspaceIndex: index);
@@ -166,7 +148,7 @@ class SwitchCommand extends Command<void> {
         }
         return;
       }
-      final index = await state.workspaceIndex(name);
+      final index = await workspaceIndex(name);
       stdout.writeln(path);
       await _runHook('post-switch', name, path, workspaceIndex: index);
     }

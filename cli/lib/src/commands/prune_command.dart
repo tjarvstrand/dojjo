@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 
-import 'package:dojjo/src/jj.dart' as jj;
-import 'package:dojjo/src/prompt.dart' as prompt;
-import 'package:dojjo/src/state.dart' as state;
+import 'package:dojjo/src/jj.dart';
+import 'package:dojjo/src/prompt.dart';
+import 'package:dojjo/src/state.dart';
 
 class PruneCommand extends Command<void> {
   PruneCommand() {
@@ -20,16 +20,16 @@ class PruneCommand extends Command<void> {
   @override
   Future<void> run() async {
     final yes = argResults!.flag('yes');
-    final workspaces = await jj.workspaceListRich();
+    final workspaces = await workspaceListRich();
 
-    final pruneable = <jj.WorkspaceInfo>[];
+    final pruneable = <WorkspaceInfo>[];
 
     for (final workspace in workspaces) {
       if (workspace.current) continue;
       if (workspace.bookmarks.isEmpty) continue;
 
       final bookmark = workspace.bookmarks.split(',').first;
-      final merged = await jj.revsetMatches('$bookmark & ancestors(trunk())');
+      final merged = await revsetMatches('$bookmark & ancestors(trunk())');
       if (merged) {
         pruneable.add(workspace);
       }
@@ -45,18 +45,18 @@ class PruneCommand extends Command<void> {
       stderr.writeln('  ${workspace.name} [${workspace.bookmarks}]');
     }
 
-    await prompt.confirmOrAbort('Remove ${pruneable.length} workspace(s)?', yes: yes);
+    await confirmOrAbort('Remove ${pruneable.length} workspace(s)?', yes: yes);
 
     for (final workspace in pruneable) {
-      final root = await jj.workspaceRoot(workspace.name);
-      await jj.workspaceForget(workspace.name);
+      final root = await workspaceRoot(workspace.name);
+      await workspaceForget(workspace.name);
       try {
-        await jj.bookmarkDelete(workspace.bookmarks.split(',').first);
-      } on jj.CommandError {
+        await bookmarkDelete(workspace.bookmarks.split(',').first);
+      } on CommandError {
         // Bookmark may not exist.
       }
-      await jj.deleteDirectory(root);
-      await state.removeWorkspaceIndex(workspace.name);
+      await deleteDirectory(root);
+      await removeWorkspaceIndex(workspace.name);
       stderr.writeln('  Removed ${workspace.name}');
     }
   }

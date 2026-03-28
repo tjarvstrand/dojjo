@@ -1,6 +1,7 @@
-import 'dart:convert';
 import 'dart:io';
 
+import 'package:dojjo/src/platform.dart';
+import 'package:dojjo/src/util/extensions.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'jj.freezed.dart';
@@ -10,10 +11,10 @@ class CommandError implements Exception {
   CommandError(this.exitCode, this.stderr);
 
   final int exitCode;
-  final String stderr;
+  final String? stderr;
 
   @override
-  String toString() => 'jj exited with code $exitCode: $stderr';
+  String toString() => 'jj exited with code $exitCode${stderr == null ? '' : ': $stderr'}';
 }
 
 @freezed
@@ -43,48 +44,43 @@ const _listTemplate =
     'self.target().empty() ++ "\\t" ++ self.target().current_working_copy() ++ "\\t" ++ '
     'self.target().diff().files().len() ++ "\\n"';
 
-Future<String> _run(List<String> args) async {
+Future<ShellResult> _run(List<String> args) async {
   if (verbose) {
     stderr.writeln('djo: jj ${args.join(' ')}');
   }
 
-  final ProcessResult result;
-  try {
-    result = await Process.run('jj', args);
-  } on ProcessException catch (e) {
-    throw CommandError(-1, 'Failed to run jj: ${e.message}');
-  }
+  final result = await runProcess(
+    'jj',
+    args,
+  ).onError<ProcessException>((e, _) => throw CommandError(-1, 'Failed to run jj: ${e.message}'));
 
   if (result.exitCode != 0) {
-    throw CommandError(result.exitCode, (result.stderr as String).trim());
+    throw CommandError(result.exitCode, result.stderr);
   }
 
-  final stdout = (result.stdout as String).trim();
-
-  if (verbose && stdout.isNotEmpty) {
-    stderr.writeln('djo: $stdout');
+  if (verbose) {
+    result.stdout?.let((out) => stderr.writeln('djo: $out'));
   }
 
-  return stdout;
+  return result;
 }
 
-List<WorkspaceInfo> parseWorkspaceList(String output) =>
-    const LineSplitter().convert(output).where((line) => line.isNotEmpty).map((line) {
-      final parts = line.split('\t');
-      return WorkspaceInfo(
-        name: parts[0],
-        changeId: parts[1],
-        bookmarks: parts[2],
-        description: parts[3],
-        conflict: parts[4] == 'true',
-        divergent: parts[5] == 'true',
-        empty: parts[6] == 'true',
-        current: parts[7] == 'true',
-        modifiedFiles: int.tryParse(parts[8]) ?? 0,
-      );
-    }).toList();
+List<WorkspaceInfo> parseWorkspaceList(String output) => output.nonEmptyLines.map((line) {
+  final parts = line.split('\t');
+  return WorkspaceInfo(
+    name: parts[0],
+    changeId: parts[1],
+    bookmarks: parts[2],
+    description: parts[3],
+    conflict: parts[4] == 'true',
+    divergent: parts[5] == 'true',
+    empty: parts[6] == 'true',
+    current: parts[7] == 'true',
+    modifiedFiles: int.tryParse(parts[8]) ?? 0,
+  );
+}).toList();
 
-Future<String> workspaceAdd(String path, {String? name, String? revision}) => _run([
+Future<void> workspaceAdd(String path, {String? name, String? revision}) => _run([
   'workspace',
   'add',
   if (name != null) ...['--name', name],
@@ -92,49 +88,63 @@ Future<String> workspaceAdd(String path, {String? name, String? revision}) => _r
   path,
 ]);
 
-Future<String> workspaceList() => _run(['workspace', 'list']);
+Future<String?> workspaceList() async => (await _run(['workspace', 'list'])).stdout;
 
-Future<List<WorkspaceInfo>> workspaceListRich() async =>
-    parseWorkspaceList(await _run(['workspace', 'list', '-T', _listTemplate]));
+Future<List<WorkspaceInfo>> workspaceListRich() async {
+  final result = await _run(['workspace', 'list', '-T', _listTemplate]);
+  return result.stdout != null ? parseWorkspaceList(result.stdout!) : [];
+}
 
-Future<String> workspaceUpdateStale() => _run(['workspace', 'update-stale']);
+Future<String?> workspaceUpdateStale() async => (await _run(['workspace', 'update-stale'])).stdout;
 
-Future<String> workspaceForget(String name) => _run(['workspace', 'forget', name]);
+Future<void> workspaceForget(String name) => _run(['workspace', 'forget', name]);
 
-Future<String> workspaceRoot([String? name]) => _run([
-  'workspace',
-  'root',
-  if (name != null) ...['--name', name],
-]);
+Future<String> workspaceRoot([String? name]) async {
+  final stdout = (await _run([
+    'workspace',
+    'root',
+    if (name != null) ...['--name', name],
+  ])).stdout;
+  if (stdout == null) {
+    throw CommandError(-1, 'jj workspace root returned empty output');
+  }
+  return stdout;
+}
 
-Future<String> bookmarkCreate(String name) => _run(['bookmark', 'create', name]);
+Future<void> bookmarkCreate(String name) => _run(['bookmark', 'create', name]);
 
-Future<String> bookmarkDelete(String name) => _run(['bookmark', 'delete', name]);
+Future<void> bookmarkDelete(String name) => _run(['bookmark', 'delete', name]);
 
-Future<String> bookmarkSet(String name, String revision) => _run(['bookmark', 'set', name, '-r', revision]);
+Future<void> bookmarkSet(String name, String revision) => _run(['bookmark', 'set', name, '-r', revision]);
 
-Future<String> bookmarkTrack(String name, {required String remote}) => _run(['bookmark', 'track', '$name@$remote']);
+Future<void> bookmarkTrack(String name, {required String remote}) => _run(['bookmark', 'track', '$name@$remote']);
 
-Future<String> gitPush({String? bookmark, bool all = false}) => _run([
+Future<String?> gitPush({String? bookmark, bool all = false}) async => (await _run([
   'git',
   'push',
   if (all) '--all',
   if (bookmark != null && !all) ...['--bookmark', bookmark],
-]);
+])).stdout;
 
-Future<String> logTemplate(String revset, String template) => _run(['log', '-r', revset, '--no-graph', '-T', template]);
+Future<String> logTemplate(String revset, String template) async {
+  final stdout = (await _run(['log', '-r', revset, '--no-graph', '-T', template])).stdout;
+  if (stdout == null) {
+    throw CommandError(-1, 'jj log returned empty output');
+  }
+  return stdout;
+}
 
-Future<String> gitRemoteList() => _run(['git', 'remote', 'list']);
+Future<String?> gitRemoteList() async => (await _run(['git', 'remote', 'list'])).stdout;
 
-Future<String> squash() => _run(['squash']);
+Future<void> squash() => _run(['squash']);
 
-Future<String> rebase(String destination) => _run(['rebase', '-d', destination]);
+Future<void> rebase(String destination) => _run(['rebase', '-d', destination]);
 
 /// Returns true if the given revset matches any commits.
 Future<bool> revsetMatches(String revset) async {
   try {
-    final output = await _run(['log', '-r', revset, '--no-graph', '-T', 'empty']);
-    return output.isNotEmpty;
+    final result = await _run(['log', '-r', revset, '--no-graph', '-T', 'empty']);
+    return result.stdout?.isNotEmpty ?? false;
   } on CommandError {
     return false;
   }
