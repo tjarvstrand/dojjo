@@ -1,6 +1,8 @@
 name: dojjo
 description: Manage jj workspaces
 version: 0.1.0
+homepage: https://github.com/tjarvstrand/dojjo
+repository: https://github.com/tjarvstrand/dojjo
 
 environment:
   sdk: ^3.8.0

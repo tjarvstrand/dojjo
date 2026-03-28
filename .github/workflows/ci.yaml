@@ -28,6 +28,8 @@ jobs:
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: check
+    permissions:
+      contents: write
     strategy:
       matrix:
         include:
