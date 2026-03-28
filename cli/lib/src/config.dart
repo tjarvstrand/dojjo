@@ -250,7 +250,8 @@ Future<ConfigWithSource> loadConfig({String? projectRoot}) async {
   ];
   final djoPaths = [
     (p.join(home, '.config', 'dojjo', 'config.toml'), 'dojjo user'),
-    (p.join(root, '.config', 'djo.toml'), 'dojjo project'),
+    (p.join(root, 'dojjo.toml'), 'dojjo project'),
+    (p.join(root, 'dojjo.local.toml'), 'dojjo project local'),
   ];
 
   // Load worktrunk configs first.

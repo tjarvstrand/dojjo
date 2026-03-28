@@ -11,23 +11,17 @@ Inspired by [worktrunk](https://worktrunk.dev/), but adapted to jj workflows.
 Run `djo` from within a jj repository.
 
 ```sh
-djo switch -c feature        # Create workspace + bookmark
-djo switch feature           # Switch to existing workspace
-djo switch                   # Interactive picker
-djo switch -                 # Switch to previous workspace
-djo switch -c -b @- feature  # Create workspace from a specific revision
-djo switch -x 'npm install' feature  # Run command after switching
-djo list                     # List workspaces with status
-djo merge main               # Squash, rebase, move bookmark, cleanup
-djo remove feature           # Remove workspace + bookmark
-djo for-each 'npm test'      # Run command in every workspace
-djo prune                    # Remove workspaces merged into trunk
-djo copy-ignored --from main # Copy build caches from another workspace
+djo switch                   # Create workspace + bookmark
+djo list                     # List workspaces
+djo merge                    # Squash, rebase, move bookmark, cleanup
+djo remove                   # Remove workspace + bookmark
+djo for-each                 # Run commands in every workspace
+djo prune                    # Remove workspaces merged into default branch
+djo copy-ignored             # Copy build caches from another workspace
 djo update-stale             # Fix stale working copies
-djo hook post-start          # Manually run hooks
+djo hook                     # Manually run hooks
 djo config show              # Show effective configuration
-djo completion zsh            # Output shell completions
-djo shell init zsh            # Output shell integration (cd wrapping)
+djo shell                    # Shell integration
 ```
 
 ### List Output
@@ -67,20 +61,21 @@ djo shell init fish | source     # fish
 Tab completion:
 
 ```sh
-eval "$(djo completion zsh)"    # zsh
-eval "$(djo completion bash)"   # bash
-djo completion fish | source     # fish
-djo completion pwsh | Invoke-Expression  # PowerShell
+eval "$(djo shell completion zsh)"    # zsh
+eval "$(djo shell completion bash)"   # bash
+djo shell completion fish | source     # fish
+djo shell completion pwsh | Invoke-Expression  # PowerShell
 ```
 
 ## Configuration
 
-dojjo reads worktrunk-compatible TOML config files at two levels, merged in this precedence order (lowest to highest):
+dojjo reads worktrunk-compatible TOML config files, merged in this precedence order (lowest to highest):
 
 1. `~/.config/worktrunk/config.toml` (user, worktrunk-compatible)
-2. `~/.config/dojjo/config.toml` (user, dojjo-specific)
-3. `.config/wt.toml` (project, worktrunk-compatible)
-4. `.config/djo.toml` (project, dojjo-specific)
+2. `.config/wt.toml` (project, worktrunk-compatible)
+3. `~/.config/dojjo/config.toml` (user, dojjo-specific)
+4. `dojjo.toml` (project, dojjo-specific)
+5. `dojjo.local.toml` (project, local overrides — add to `.gitignore`)
 
 Unknown keys (e.g. worktrunk-only keys like `commit.stage`, `ci.platform`) are silently ignored.
 
@@ -88,7 +83,10 @@ Unknown keys (e.g. worktrunk-only keys like `commit.stage`, `ci.platform`) are s
 
 ```toml
 # Workspace path template
-worktree-path = "{{ repo_path }}/../{{ name }}"
+workspace-path = "{{ repo_path }}/../{{ name }}"
+
+# Create bookmarks when creating workspaces (default: true)
+create-bookmark = true
 
 [merge]
 squash = true       # Squash before merge (default: true)
@@ -116,9 +114,9 @@ url = "echo http://localhost:{{ name | hash_port }}"
 
 ### Template Variables
 
-Used in `worktree-path`, hook commands, aliases, and `--execute`:
+Used in `workspace-path`, hook commands, aliases, and `--execute`:
 
-**Variables** available in all contexts (worktree-path, hooks, aliases, --execute):
+**Variables** available in all contexts (workspace-path, hooks, aliases, --execute):
 
 | Variable | Description |
 |----------|-------------|
@@ -129,7 +127,6 @@ Used in `worktree-path`, hook commands, aliases, and `--execute`:
 | `worktree_path` / `workspace_path` | Workspace root path |
 | `worktree_name` / `workspace_name` | Workspace directory name |
 | `cwd` | Current working directory |
-| `workspace_index` | Persistent integer index (reusable after removal) |
 
 **Additional variables** available in hooks:
 
@@ -163,7 +160,7 @@ Templates use Jinja2 syntax via the [jinja](https://pub.dev/packages/jinja) pack
 
 | Config Key | Environment Variable |
 |------------|---------------------|
-| `worktree-path` | `DOJJO_WORKTREE_PATH` |
+| `workspace-path` | `DOJJO_WORKSPACE_PATH` |
 | `merge.squash` | `DOJJO_MERGE__SQUASH` |
 | `merge.push` | `DOJJO_MERGE__PUSH` |
 
@@ -208,7 +205,7 @@ post-start = [
 Use `--skip-hooks` on switch, merge, or remove to skip hooks. Use `djo hook <type>` to run hooks manually.
 
 If you have both a worktrunk config and dojjo config in your repo, you can disable worktrunk hooks in dojjo if you don't
-want to run both. Add this to your dojjo config (`.config/djo.toml`):
+want to run both. Add this to your dojjo config (`dojjo.toml`):
 
 ```toml
 # Disable all worktrunk hooks
@@ -235,8 +232,8 @@ Hook commands from worktrunk configs (`wt step copy-ignored`, `wt merge`, etc.) 
 
 ## Worktrunk Compatibility
 
-dojjo is designed so that projects with an existing `.config/wt.toml` work out of the box. Config file format, keys, and
-template syntax are compatible with worktrunk.
+dojjo is designed so that projects with an existing `.config/wt.toml` should work out of the box. Config file format, 
+keys, and template syntax are compatible with worktrunk.
 
 Worktrunk features that don't apply to jj are not supported.
 
