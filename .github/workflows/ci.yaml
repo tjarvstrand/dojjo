@@ -24,6 +24,8 @@ jobs:
       - run: mise run analyze
       - run: mise run test
       - run: mise run build
+      - run: dart pub global activate pana
+      - run: dart pub global run pana --exit-code-threshold 0
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
