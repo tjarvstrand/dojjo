@@ -1,12 +1,24 @@
 # dojjo
 
+[![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
+
 A workspace manager for [jj](https://github.com/jj-vcs/jj).
 
-Inspired by [worktrunk](https://worktrunk.dev/), but adapted to jj workflows.
+Inspired by [worktrunk](https://worktrunk.dev/), but adapted to jj workflows. Manages workspace lifecycle (create, switch, merge, remove), runs hooks at each stage, and keeps worktrunk config compatibility.
 
-## Installation
+## Table of Contents
 
-### Linx/MacOS
+- [Install](#install)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Worktrunk Compatibility](#worktrunk-compatibility)
+- [Maintainers](#maintainers)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Install
+
+### Linux/macOS
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/tjarvstrand/dojjo/main/install.sh | sh
@@ -24,11 +36,22 @@ INSTALL_DIR=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/tjarvstr
 
 ### Windows
 
-Ddownload `djo-windows-x64.exe` from the [latest release](https://github.com/tjarvstrand/dojjo/releases/latest), rename it to djo.exe and add it to your PATH.
+Download `djo-windows-x64.exe` from the [latest release](https://github.com/tjarvstrand/dojjo/releases/latest), rename it to `djo.exe`, and add it to your PATH.
+
+### Dart
+
+```sh
+# Global install
+dart pub global activate dojjo
+
+# Project-local install (add to dev_dependencies)
+dart pub add --dev dojjo
+dart run dojjo
+```
 
 ## Usage
 
-### Commands
+### CLI
 
 Run `djo` from within a jj repository.
 
@@ -69,7 +92,7 @@ Example: `* feature [feat-branch] ✘ Add login page (3 files)`
 
 On failure, advises `jj op undo` to revert.
 
-## Shell Integration
+### Shell Integration
 
 Add to your shell rc file for `cd` wrapping on `switch` and `merge`:
 
@@ -240,7 +263,7 @@ ignore-worktrunk-hooks = ["post-start", "pre-merge"]
 ignore-worktrunk-hooks = ["pre-merge.lint"]
 ```
 
-Hook commands from worktrunk configs (`wt step copy-ignored`, `wt merge`, etc.) are automatically rewritten to their 
+Hook commands from worktrunk configs (`wt step copy-ignored`, `wt merge`, etc.) are automatically rewritten to their
 `djo` equivalents when running in dojjo.
 
 ### Copy Ignored
@@ -254,12 +277,20 @@ Hook commands from worktrunk configs (`wt step copy-ignored`, `wt merge`, etc.) 
 
 ## Worktrunk Compatibility
 
-dojjo is designed so that projects with an existing `.config/wt.toml` should work out of the box. Config file format, 
+dojjo is designed so that projects with an existing `.config/wt.toml` should work out of the box. Config file format,
 keys, and template syntax are compatible with worktrunk.
 
 Worktrunk features that don't apply to jj are not supported.
 
-## Development
+## Maintainers
+
+[@tjarvstrand](https://github.com/tjarvstrand)
+
+## Contributing
+
+PRs welcome. For questions or bug reports, [open an issue](https://github.com/tjarvstrand/dojjo/issues).
+
+### Development
 
 Make sure you have [mise](https://mise.jdx.dev/) installed.
 
@@ -273,7 +304,6 @@ mise run compile    # Check compilation
 
 The native binary is output to `cli/build/djo`.
 
-## Future Work
+## License
 
-- CI status in `list --full` output (GitHub/GitLab pipeline status per bookmark)
-- Agent tool integrations (Claude Code, etc.)
+[MIT](LICENSE)

@@ -9,6 +9,7 @@ environment:
 
 executables:
   djo: djo
+  dojjo: djo
 
 dependencies:
   args: ^2.7.0
