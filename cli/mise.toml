@@ -43,3 +43,7 @@ run = "dart format --output=none --set-exit-if-changed ."
 [tasks.check]
 description = "Analyze and check formatting"
 depends = ["analyze", "format-check"]
+
+[tasks.release]
+description = "Release: update changelog, publish to pub.dev, push tag"
+run = "scripts/release.sh"
