@@ -55,16 +55,17 @@ rm -f "$changelog.bak"
 # Commit, tag, and push.
 if [ "$vcs" = "jj" ]; then
   jj commit -m "Release $tag"
+  jj bookmark set main -r @-
   jj tag set "$tag" -r @-
   jj git push
   jj git export
-  git push origin "$tag"
+  git push -f origin "$tag"
 else
   git add "$changelog"
   git commit -m "Release $tag"
   git tag "$tag"
   git push
-  git push origin "$tag"
+  git push -f origin "$tag"
 fi
 
 # Publish to pub.dev.
