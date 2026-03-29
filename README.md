@@ -4,6 +4,28 @@ A workspace manager for [jj](https://github.com/jj-vcs/jj).
 
 Inspired by [worktrunk](https://worktrunk.dev/), but adapted to jj workflows.
 
+## Installation
+
+### Linx/MacOS
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/tjarvstrand/dojjo/main/install.sh | sh
+```
+
+This downloads the latest binary to `~/.local/bin/djo`. To customize:
+
+```sh
+# Install a specific version
+curl -fsSL https://raw.githubusercontent.com/tjarvstrand/dojjo/main/install.sh | sh -s 0.1.0
+
+# Install to a different directory
+INSTALL_DIR=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/tjarvstrand/dojjo/main/install.sh | sh
+```
+
+### Windows
+
+Ddownload `djo-windows-x64.exe` from the [latest release](https://github.com/tjarvstrand/dojjo/releases/latest), rename it to djo.exe and add it to your PATH.
+
 ## Usage
 
 ### Commands
