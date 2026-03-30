@@ -18,32 +18,37 @@ run = "dart run build_runner {{arg(name='mode', default='build')}} --delete-conf
 
 [tasks.build]
 description = "Compile native binary"
-depends = ["deps"]
+depends = ["deps", "generate"]
 run = "dart compile exe bin/djo.dart -o build/djo"
 
 [tasks.compile]
 description = "Check compilation"
-depends = ["deps"]
-run = "dart compile kernel bin/djo.dart -o /dev/null"
+depends = ["deps", "generate"]
+run = "dart compile kernel bin/djo.dart -o build/djo.dill"
 
 [tasks.test]
 description = "Run tests"
 depends = ["deps"]
 run = "dart test"
 
-[tasks.analyze]
-description = "Run static analysis"
-depends = ["deps"]
-run = "dart analyze --fatal-infos"
-
 [tasks.format-check]
 description = "Check formatting"
-run = "dart format --output=none --set-exit-if-changed ."
+run = "dart format --output=none --set-exit-if-changed $(git ls-files lib test)"
+
+[tasks.analyze]
+description = "Run static analysis"
+depends = ["deps", "generate"]
+run = "dart analyze --fatal-infos"
+
+[tasks.format]
+description = "Check formatting"
+run = "dart format ."
 
 [tasks.check]
 description = "Analyze and check formatting"
 depends = ["analyze", "format-check"]
 
 [tasks.release]
+depends = ["analyze", "format"]
 description = "Release: update changelog, publish to pub.dev, push tag"
 run = "scripts/release.sh"
