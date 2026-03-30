@@ -81,6 +81,33 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 500));
     });
 
+    test('pre-hook fails when working directory does not exist', () async {
+      final deleted = Directory('${tempDir.path}/deleted');
+      deleted.createSync();
+      deleted.deleteSync(recursive: true);
+      final hooks = <String, HookPipeline>{
+        'pre-remove': [
+          [HookEntry(name: 'check', command: 'echo ok')],
+        ],
+      };
+      await expectLater(runHooks('pre-remove', hooks: hooks, name: 'ws', path: deleted.path), throwsA(anything));
+    });
+
+    test('hook succeeds with parent directory after child is deleted', () async {
+      final child = Directory('${tempDir.path}/workspace');
+      child.createSync();
+      child.deleteSync(recursive: true);
+      final outFile = File('${tempDir.path}/hook_ran.txt');
+      final hooks = <String, HookPipeline>{
+        'pre-remove': [
+          [HookEntry(name: 'check', command: 'echo ok > ${outFile.path}')],
+        ],
+      };
+      // Using the parent (tempDir) should work even though the child is deleted.
+      await runHooks('pre-remove', hooks: hooks, name: 'ws', path: tempDir.path);
+      expect(outFile.readAsStringSync().trim(), equals('ok'));
+    });
+
     test('pipeline: step 2 runs after step 1 completes', () async {
       final outFile = File('${tempDir.path}/pipeline.txt');
       final hooks = <String, HookPipeline>{

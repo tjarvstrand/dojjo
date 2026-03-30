@@ -53,7 +53,8 @@ class RemoveCommand extends Command<void> {
     stderr.writeln("Removed workspace '$name'");
 
     if (!skipHooks) {
-      await runHooks('post-remove', hooks: _config.hooks, name: name, path: root);
+      final primaryRoot = await workspaceRoot('default');
+      await runHooks('post-remove', hooks: _config.hooks, name: name, path: primaryRoot);
     }
   }
 }
