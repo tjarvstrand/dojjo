@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `switch` command now shows the real resolved path instead of paths containing `/../`
+- Project config is now resolved from the workspace root instead of the current directory, matching worktrunk's behavior
+
 ## [0.1.2] - 2026-03-30
 
 ### Fixed

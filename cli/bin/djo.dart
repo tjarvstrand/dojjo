@@ -19,8 +19,15 @@ import 'package:dojjo/src/jj.dart' as jj;
 import 'package:dojjo/src/version.dart' as v;
 
 Future<void> main(List<String> args) async {
-  // Load config.
-  final configWithSource = await loadConfig();
+  // Load config from the workspace root, matching worktrunk's behaviour of
+  // resolving .config/wt.toml from the worktree root rather than the cwd.
+  String? root;
+  try {
+    root = await jj.workspaceRoot();
+  } on jj.CommandError {
+    // Not inside a jj workspace — fall back to default (cwd).
+  }
+  final configWithSource = await loadConfig(projectRoot: root);
   final config = configWithSource.config;
 
   final runner = _DjoCommandRunner(config, configWithSource);
