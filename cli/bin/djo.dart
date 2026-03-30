@@ -16,6 +16,7 @@ import 'package:dojjo/src/commands/switch_command.dart';
 import 'package:dojjo/src/commands/update_stale_command.dart';
 import 'package:dojjo/src/config.dart';
 import 'package:dojjo/src/jj.dart' as jj;
+import 'package:dojjo/src/version.dart' as v;
 
 Future<void> main(List<String> args) async {
   // Load config.
@@ -37,7 +38,9 @@ Future<void> main(List<String> args) async {
 
 class _DjoCommandRunner extends CommandRunner<void> {
   _DjoCommandRunner(Config config, ConfigWithSource configWithSource) : super('djo', 'Manage jj workspaces') {
-    argParser.addFlag('verbose', abbr: 'v', defaultsTo: false);
+    argParser
+      ..addFlag('verbose', abbr: 'v', defaultsTo: false)
+      ..addFlag('version', defaultsTo: false, negatable: false, help: 'Print the dojjo version');
     addCommand(ConfigCommand(configWithSource));
     addCommand(SwitchCommand(config));
     addCommand(MergeCommand(config));
@@ -53,6 +56,10 @@ class _DjoCommandRunner extends CommandRunner<void> {
 
   @override
   Future<void> runCommand(ArgResults topLevelResults) async {
+    if (topLevelResults.flag('version')) {
+      stdout.writeln(v.version);
+      return;
+    }
     jj.verbose = topLevelResults.flag('verbose');
     await super.runCommand(topLevelResults);
   }

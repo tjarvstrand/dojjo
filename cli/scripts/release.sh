@@ -60,9 +60,11 @@ esac
 tag="v$version"
 date="$(date +%Y-%m-%d)"
 
-# Update version in pubspec.yaml.
+# Update version in pubspec.yaml and version.dart.
 sed -i.bak "s/^version: .*/version: $version/" pubspec.yaml
 rm -f pubspec.yaml.bak
+sed -i.bak "s/^const version = .*/const version = '$version';/" lib/src/version.dart
+rm -f lib/src/version.dart.bak
 
 # Ensure pub.dev authentication (no-op if already logged in).
 dart pub login
