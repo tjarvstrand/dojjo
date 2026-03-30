@@ -125,21 +125,21 @@ class SwitchCommand extends Command<void> {
     String path;
     if (create) {
       await _runHook('pre-start', name, '.');
-      path = await _createWorkspace(name, revision: base, createBookmark: bookmark);
+      path = p.canonicalize(await _createWorkspace(name, revision: base, createBookmark: bookmark));
       await currentName?.let(savePreviousWorkspace);
       stdout.writeln(path);
       await _runHook('post-start', name, path);
     } else {
       await _runHook('pre-switch', name, '.');
       try {
-        path = await workspaceRoot(name);
+        path = p.canonicalize(await workspaceRoot(name));
       } on CommandError {
         final confirmed = await confirm("Workspace '$name' not found. Create it?");
         if (!confirmed) {
           throw Exception('Aborted');
         }
         await _runHook('pre-start', name, '.');
-        path = await _createWorkspace(name, revision: base, createBookmark: bookmark);
+        path = p.canonicalize(await _createWorkspace(name, revision: base, createBookmark: bookmark));
         await currentName?.let(savePreviousWorkspace);
         stdout.writeln(path);
         await _runHook('post-start', name, path);
