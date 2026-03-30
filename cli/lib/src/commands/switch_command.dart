@@ -50,7 +50,7 @@ class SwitchCommand extends Command<void> {
   Future<void> _executeInWorkspace(String command, String path) async {
     final rendered = renderTemplate(command, name: p.basename(path), repoPath: path);
     final result = await runShellCommand(rendered, workingDirectory: path);
-    result.stdout?.let(stderr.writeln);
+    result.stdout?.let(stdout.writeln);
     result.stderr?.let(stderr.writeln);
   }
 
@@ -119,14 +119,14 @@ class SwitchCommand extends Command<void> {
     final nameArg = rest.firstOrNull ?? (await _pickWorkspace() ?? (throw Exception('Aborted')));
     final name = nameArg == '-' ? await _previousWorkspace() : nameArg;
 
-    // Save current workspace as "previous" before switching.
     final workspaces = await workspaceListRich();
-    await workspaces.where((workspace) => workspace.current).firstOrNull?.name.let(savePreviousWorkspace);
+    final currentName = workspaces.where((workspace) => workspace.current).firstOrNull?.name;
 
     String path;
     if (create) {
       await _runHook('pre-start', name, '.');
       path = await _createWorkspace(name, revision: base, createBookmark: bookmark);
+      await currentName?.let(savePreviousWorkspace);
       stdout.writeln(path);
       await _runHook('post-start', name, path);
     } else {
@@ -140,6 +140,7 @@ class SwitchCommand extends Command<void> {
         }
         await _runHook('pre-start', name, '.');
         path = await _createWorkspace(name, revision: base, createBookmark: bookmark);
+        await currentName?.let(savePreviousWorkspace);
         stdout.writeln(path);
         await _runHook('post-start', name, path);
         await _runHook('post-switch', name, path);
@@ -149,6 +150,7 @@ class SwitchCommand extends Command<void> {
         }
         return;
       }
+      await currentName?.let(savePreviousWorkspace);
       stdout.writeln(path);
       await _runHook('post-switch', name, path);
     }

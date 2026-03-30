@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0+2] - 2026-03-29
 
-## [0.1.0+2] - 2026-03-29
-
 ### Added
 
 - `create-bookmark` config option and `--bookmark`/`--no-bookmark` flag on `switch -c`
@@ -56,6 +54,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Environment variable overrides for config values
 
 [Unreleased]: https://github.com/tjarvstrand/dojjo/compare/v0.1.0+2...HEAD
-[0.1.0+2]: https://github.com/tjarvstrand/dojjo/releases/tag/v0.1.0+2
 [0.1.0+2]: https://github.com/tjarvstrand/dojjo/releases/tag/v0.1.0+2
 [0.1.0]: https://github.com/tjarvstrand/dojjo/releases/tag/v0.1.0
