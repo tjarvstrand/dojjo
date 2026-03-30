@@ -87,34 +87,33 @@ sealed class ConfigWithSource with _$ConfigWithSource {
       _ConfigWithSource;
 }
 
-HookStep _parseHookStep(Map<String, Object?> map) =>
-    map.entries.map((e) => HookEntry(name: e.key, command: e.value as String? ?? '')).toList();
+// HookStep _parseHookStep(Map<String, Object?> map) =>
+//     map.entries.map((e) => HookEntry(name: e.key, command: e.value as String? ?? '')).toList();
 
-HookMap _parseHooks(Map<String, Object?> hooksMap) {
-  final result = <String, HookPipeline>{};
-  for (final entry in hooksMap.entries) {
-    final hookType = entry.key;
-    final value = entry.value;
-    if (value is String) {
+HookStep _parseHookStep(Map<String, Object?> map) => [
+  for (final MapEntry(:key, :value) in map.entries) HookEntry(name: key, command: value as String? ?? ''),
+];
+
+HookMap _parseHooks(Map<String, Object?> hooksMap) => {
+  for (final MapEntry(key: hookType, :value) in hooksMap.entries)
+    if (value is String)
       // Simple form: post-start = "npm install"
       // One step with one command.
-      result[hookType] = [
+      hookType: [
         [HookEntry(name: hookType, command: value)],
-      ];
-    } else if (value is List) {
+      ]
+    else if (value is List)
       // Pipeline form: post-start = [{ install = "npm install" }, { build = "npm run build" }]
       // Each list element is a step; commands within a step run in parallel.
-      result[hookType] = value.whereType<Map<String, Object?>>().map(_parseHookStep).toList();
-    } else if (value is Map<String, Object?>) {
+      hookType: value.whereType<Map<String, Object?>>().map(_parseHookStep).toList()
+    else if (value is Map<String, Object?>)
       // Named form: [hooks.pre-merge] test = "cargo test"
       // One step with parallel commands.
-      result[hookType] = [_parseHookStep(value)];
-    }
-  }
-  return result;
-}
+      hookType: [_parseHookStep(value)],
+};
 
-Config _parseToml(String content) {
+/// Preprocess a TOML string into a map ready for [Config.fromJson].
+Map<String, Object?> _toTomlMap(String content) {
   final doc = TomlDocument.parse(content).toMap();
 
   // Flatten step.copy-ignored to top level for Config.fromJson.
@@ -124,15 +123,24 @@ Config _parseToml(String content) {
   }
 
   // Accept worktrunk's worktree-path as fallback.
-  doc['workspace-path'] ??= doc['worktree-path'];
+  if (doc.containsKey('worktree-path') && !doc.containsKey('workspace-path')) {
+    doc['workspace-path'] = doc['worktree-path'];
+  }
 
-  final config = Config.fromJson(doc);
-  final hooksMap = doc['hooks'];
+  return doc;
+}
+
+/// Parse a preprocessed TOML map into a [Config].
+Config _mapToConfig(Map<String, Object?> map) {
+  final config = Config.fromJson(map);
+  final hooksMap = map['hooks'];
   return config.copyWith(
     hooks: hooksMap is Map<String, Object?> ? _parseHooks(hooksMap) : const {},
-    ignoreWorktrunkHooks: _parseIgnoreWorktrunkHooks(doc['ignore-worktrunk-hooks']),
+    ignoreWorktrunkHooks: _parseIgnoreWorktrunkHooks(map['ignore-worktrunk-hooks']),
   );
 }
+
+Config _parseToml(String content) => _mapToConfig(_toTomlMap(content));
 
 IgnoreWorktrunkHooks _parseIgnoreWorktrunkHooks(Object? value) {
   if (value is bool && value) return const IgnoreWorktrunkHooks.all();
@@ -140,30 +148,31 @@ IgnoreWorktrunkHooks _parseIgnoreWorktrunkHooks(Object? value) {
   return const IgnoreWorktrunkHooks.none();
 }
 
+HookMap _parseHooksFromMap(Map<String, Object?> map) {
+  final hooksMap = map['hooks'];
+  return hooksMap is Map<String, Object?> ? _parseHooks(hooksMap) : const {};
+}
+
+/// Deep-merge two maps. Nested maps are merged recursively;
+/// other values in [override] replace those in [base].
+Map<String, Object?> _deepMerge(Map<String, Object?> base, Map<String, Object?> override) {
+  final result = Map<String, Object?>.of(base);
+  for (final MapEntry(:key, value: overrideValue) in override.entries) {
+    final baseValue = result[key];
+    result[key] = baseValue is Map<String, Object?> && overrideValue is Map<String, Object?>
+        ? _deepMerge(baseValue, overrideValue)
+        : overrideValue;
+  }
+  return result;
+}
+
 HookMap _mergeHooks(HookMap base, HookMap override) {
-  final result = <String, HookPipeline>{
-    for (final entry in base.entries) entry.key: [...entry.value],
-  };
+  final result = {...base};
   for (final entry in override.entries) {
     result.update(entry.key, (existing) => [...existing, ...entry.value], ifAbsent: () => entry.value);
   }
   return result;
 }
-
-Config _mergeConfigs(Config base, Config override) => Config(
-  workspacePath: override.workspacePath.nonEmptyOrNull ?? base.workspacePath,
-  merge: MergeConfig(
-    squash: override.merge.squash,
-    rebase: override.merge.rebase,
-    remove: override.merge.remove,
-    verify: override.merge.verify,
-    push: override.merge.push,
-  ),
-  list: ListConfig(url: override.list.url.nonEmptyOrNull ?? base.list.url),
-  copyIgnored: CopyIgnoredConfig(exclude: {...base.copyIgnored.exclude, ...override.copyIgnored.exclude}.toList()),
-  aliases: {...base.aliases, ...override.aliases},
-  hooks: _mergeHooks(base.hooks, override.hooks),
-);
 
 Config _applyEnvOverrides(Config config) {
   final env = Platform.environment;
@@ -179,17 +188,12 @@ Config _applyEnvOverrides(Config config) {
   );
 }
 
-bool? _envBool(Map<String, String> env, String key) {
-  final value = env[key];
-  if (value == null) return null;
-  return value.toLowerCase() == 'true';
-}
+bool? _envBool(Map<String, String> env, String key) => env[key]?.toLowerCase().let((it) => it == 'true');
 
-Future<Config?> _tryLoadFile(String path) async {
+Future<Map<String, Object?>?> _tryLoadMap(String path) async {
   final file = File(path);
   if (!await file.exists()) return null;
-  final content = await file.readAsString();
-  return _parseToml(content);
+  return _toTomlMap(await file.readAsString());
 }
 
 HookMap _filterWorktrunkHooks(HookMap hooks, IgnoreWorktrunkHooks ignore) => switch (ignore) {
@@ -214,25 +218,25 @@ HookMap _filterByPatterns(HookMap hooks, List<String> patterns) {
   }
 
   final result = <String, HookPipeline>{};
-  for (final entry in hooks.entries) {
-    if (wholeTypes.contains(entry.key)) continue;
+  for (final MapEntry(:key, :value) in hooks.entries) {
+    if (wholeTypes.contains(key)) continue;
 
-    final ignoredNames = namedEntries[entry.key];
+    final ignoredNames = namedEntries[key];
     if (ignoredNames == null) {
-      result[entry.key] = entry.value;
+      result[key] = value;
       continue;
     }
 
     // Filter out specific named entries from each step.
     final filteredPipeline = <HookStep>[];
-    for (final step in entry.value) {
+    for (final step in value) {
       final filteredStep = step.where((e) => !ignoredNames.contains(e.name)).toList();
       if (filteredStep.isNotEmpty) {
         filteredPipeline.add(filteredStep);
       }
     }
     if (filteredPipeline.isNotEmpty) {
-      result[entry.key] = filteredPipeline;
+      result[key] = filteredPipeline;
     }
   }
   return result;
@@ -240,6 +244,10 @@ HookMap _filterByPatterns(HookMap hooks, List<String> patterns) {
 
 /// Load config from all sources, merged in precedence order.
 /// Returns the effective config and the list of files that were loaded.
+///
+/// Scalar config fields are deep-merged at the TOML map level so that
+/// only explicitly-set keys override earlier values. Hooks use append
+/// semantics (later files add to the pipeline, not replace).
 Future<ConfigWithSource> loadConfig({String? projectRoot}) async {
   final home = homeDirectory;
   final root = projectRoot ?? Directory.current.path;
@@ -254,40 +262,54 @@ Future<ConfigWithSource> loadConfig({String? projectRoot}) async {
     (p.join(root, 'dojjo.local.toml'), 'dojjo project local'),
   ];
 
-  // Load worktrunk configs first.
-  var wtConfig = const Config();
   final sources = <String>[];
+
+  // Load worktrunk configs — deep-merge maps, append hooks.
+  var wtMap = <String, Object?>{};
+  var wtHooks = const <String, HookPipeline>{};
   for (final (path, label) in wtPaths) {
-    final loaded = await _tryLoadFile(path);
-    if (loaded != null) {
-      wtConfig = _mergeConfigs(wtConfig, loaded);
+    final map = await _tryLoadMap(path);
+    if (map != null) {
+      wtMap = _deepMerge(wtMap, map);
+      wtHooks = _mergeHooks(wtHooks, _parseHooksFromMap(map));
       sources.add('$label: $path');
     }
   }
 
-  // Load dojjo configs.
-  var djoConfig = const Config();
+  // Load dojjo configs — deep-merge maps, append hooks.
+  var djoMap = <String, Object?>{};
+  var djoHooks = const <String, HookPipeline>{};
   for (final (path, label) in djoPaths) {
-    final loaded = await _tryLoadFile(path);
-    if (loaded != null) {
-      djoConfig = _mergeConfigs(djoConfig, loaded);
+    final map = await _tryLoadMap(path);
+    if (map != null) {
+      djoMap = _deepMerge(djoMap, map);
+      djoHooks = _mergeHooks(djoHooks, _parseHooksFromMap(map));
       sources.add('$label: $path');
     }
   }
 
   // Filter worktrunk hooks based on dojjo ignore settings.
-  final filteredWtHooks = _filterWorktrunkHooks(wtConfig.hooks, djoConfig.ignoreWorktrunkHooks);
-  wtConfig = wtConfig.copyWith(hooks: filteredWtHooks);
+  final filteredWtHooks = _filterWorktrunkHooks(wtHooks, _parseIgnoreWorktrunkHooks(djoMap['ignore-worktrunk-hooks']));
 
-  // Merge: worktrunk base, dojjo overrides.
-  var config = _mergeConfigs(wtConfig, djoConfig);
-  config = _applyEnvOverrides(config);
+  // Deep-merge scalar config (dojjo overrides worktrunk).
+  final mergedMap = _deepMerge(wtMap, djoMap);
+  final config = _mapToConfig(
+    mergedMap,
+  ).copyWith(hooks: _mergeHooks(filteredWtHooks, djoHooks)).let(_applyEnvOverrides);
 
   return ConfigWithSource(config: config, sources: sources);
 }
 
 // Exposed for testing.
 Config parseToml(String content) => _parseToml(content);
-Config mergeConfigs(Config base, Config override) => _mergeConfigs(base, override);
+Config mergeToml(String base, String override) {
+  final baseMap = _toTomlMap(base);
+  final overrideMap = _toTomlMap(override);
+  final mergedMap = _deepMerge(baseMap, overrideMap);
+  return _mapToConfig(
+    mergedMap,
+  ).copyWith(hooks: _mergeHooks(_parseHooksFromMap(baseMap), _parseHooksFromMap(overrideMap)));
+}
+
 Config applyEnvOverrides(Config config) => _applyEnvOverrides(config);
 HookMap filterWorktrunkHooks(HookMap hooks, IgnoreWorktrunkHooks ignore) => _filterWorktrunkHooks(hooks, ignore);
