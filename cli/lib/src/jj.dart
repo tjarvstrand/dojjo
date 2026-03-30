@@ -67,6 +67,9 @@ Future<ShellResult> _run(List<String> args) async {
 
 List<WorkspaceInfo> parseWorkspaceList(String output) => output.nonEmptyLines.map((line) {
   final parts = line.split('\t');
+  if (parts.length != 9) {
+    throw FormatException('Expected 9 tab-separated fields from jj workspace list, got ${parts.length}: $line');
+  }
   return WorkspaceInfo(
     name: parts[0],
     changeId: parts[1],

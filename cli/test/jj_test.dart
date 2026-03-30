@@ -71,5 +71,15 @@ void main() {
       expect(ws.empty, isTrue);
       expect(ws.current, isFalse);
     });
+
+    test('throws FormatException on too few fields', () {
+      const input = 'ws\tid\tbookmarks';
+      expect(() => parseWorkspaceList(input), throwsFormatException);
+    });
+
+    test('throws FormatException on too many fields', () {
+      const input = 'ws\tid\t\tdesc\tfalse\tfalse\tfalse\ttrue\t0\textra';
+      expect(() => parseWorkspaceList(input), throwsFormatException);
+    });
   });
 }
