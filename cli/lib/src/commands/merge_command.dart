@@ -44,11 +44,13 @@ class MergeCommand extends Command<void> {
     final target = rest.first;
 
     final root = await workspaceRoot();
+    final workspaces = await workspaceListRich();
+    final name = workspaces.where((workspace) => workspace.current).firstOrNull?.name ?? 'default';
     stderr.writeln("Will squash, rebase onto '$target', move bookmark, and delete $root");
     await confirmOrAbort('Proceed?', yes: yes);
 
     if (!skipHooks) {
-      await runHooks('pre-merge', hooks: _config.hooks, name: target, path: root, target: target);
+      await runHooks('pre-merge', hooks: _config.hooks, name: name, path: root, target: target);
     }
 
     if (_config.merge.squash) {
@@ -72,7 +74,7 @@ class MergeCommand extends Command<void> {
     stdout.writeln(primaryRoot);
 
     if (!skipHooks) {
-      await runHooks('post-merge', hooks: _config.hooks, name: target, path: primaryRoot, target: target);
+      await runHooks('post-merge', hooks: _config.hooks, name: name, path: primaryRoot, target: target);
     }
   }
 }

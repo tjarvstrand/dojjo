@@ -18,6 +18,10 @@ Keep compatibility with worktrunk's **configuration files** (`.config/wt.toml` f
 
 Prefer `isEmpty` over `isNotEmpty` in conditionals. Avoid named imports (`as X`) unless there are actual naming conflicts. Exception: `package:path/path.dart as p` is standard Dart convention.
 
+## Changelog
+
+New entries always go under the `## [Unreleased]` heading, never under an already-released version.
+
 ## Testing
 
 Always add tests covering new functionality or fixes for defects.
