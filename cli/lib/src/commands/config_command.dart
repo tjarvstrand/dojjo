@@ -52,9 +52,17 @@ class ConfigShowCommand extends Command<void> {
     _show('merge.verify', config.merge.verify);
     _show('merge.push', config.merge.push);
     _show('list.url', config.list.url);
-    if (config.aliases.isNotEmpty) {
-      for (final entry in config.aliases.entries) {
-        _show('aliases.${entry.key}', entry.value);
+    for (final MapEntry(:key, value: pipeline) in config.aliases.entries) {
+      final commands = pipeline.expand((step) => step.map((e) => e.command)).toList();
+      if (commands.length == 1) {
+        _show('aliases.$key', commands.first);
+      } else {
+        _show('aliases.$key', '[${commands.length} commands]');
+        for (final step in pipeline) {
+          for (final entry in step) {
+            _show('aliases.$key.${entry.name}', entry.command);
+          }
+        }
       }
     }
   }

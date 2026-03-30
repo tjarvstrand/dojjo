@@ -11,6 +11,7 @@ import 'package:dojjo/src/commands/list_command.dart';
 import 'package:dojjo/src/commands/merge_command.dart';
 import 'package:dojjo/src/commands/prune_command.dart';
 import 'package:dojjo/src/commands/remove_command.dart';
+import 'package:dojjo/src/commands/run_command.dart';
 import 'package:dojjo/src/commands/shell_command.dart';
 import 'package:dojjo/src/commands/switch_command.dart';
 import 'package:dojjo/src/commands/update_stale_command.dart';
@@ -53,6 +54,7 @@ class _DjoCommandRunner extends CommandRunner<void> {
     addCommand(MergeCommand(config));
     addCommand(ListCommand());
     addCommand(RemoveCommand(config));
+    addCommand(RunCommand(config));
     addCommand(HookCommand(config));
     addCommand(CopyIgnoredCommand(config));
     addCommand(ForEachCommand());

@@ -30,15 +30,42 @@ url = "http://localhost:{{ name | hash_port }}"
       expect(config.list.url, contains('hash_port'));
     });
 
-    test('parses aliases', () {
+    test('parses simple aliases as single-step pipelines', () {
       final config = parseToml('''
 [aliases]
 url = "echo hello"
 deploy = "make deploy"
 ''');
       expect(config.aliases, hasLength(2));
-      expect(config.aliases['url'], equals('echo hello'));
-      expect(config.aliases['deploy'], equals('make deploy'));
+      expect(config.aliases['url']![0][0].command, equals('echo hello'));
+      expect(config.aliases['deploy']![0][0].command, equals('make deploy'));
+    });
+
+    test('parses named alias as parallel commands', () {
+      final config = parseToml('''
+[aliases.build]
+compile = "cargo build"
+test = "cargo test"
+''');
+      final pipeline = config.aliases['build']!;
+      expect(pipeline, hasLength(1));
+      expect(pipeline[0], hasLength(2));
+      expect(pipeline[0][0].name, equals('compile'));
+      expect(pipeline[0][1].name, equals('test'));
+    });
+
+    test('parses pipeline alias as sequential steps', () {
+      final config = parseToml('''
+[aliases]
+ci = [{install = "npm install"}, {build = "npm run build", lint = "npm run lint"}]
+''');
+      final pipeline = config.aliases['ci']!;
+      expect(pipeline, hasLength(2));
+      expect(pipeline[0], hasLength(1));
+      expect(pipeline[0][0].command, equals('npm install'));
+      expect(pipeline[1], hasLength(2));
+      expect(pipeline[1][0].name, equals('build'));
+      expect(pipeline[1][1].name, equals('lint'));
     });
 
     test('defaults for missing keys', () {
@@ -168,7 +195,7 @@ rebase = false
       expect(merged.createBookmark, isFalse);
     });
 
-    test('aliases are merged with override taking precedence', () {
+    test('aliases from same name are appended', () {
       final merged = mergeToml(
         '''
 [aliases]
@@ -181,9 +208,11 @@ b = "override-b"
 c = "override-c"
 ''',
       );
-      expect(merged.aliases['a'], equals('base-a'));
-      expect(merged.aliases['b'], equals('override-b'));
-      expect(merged.aliases['c'], equals('override-c'));
+      expect(merged.aliases['a']![0][0].command, equals('base-a'));
+      expect(merged.aliases['b'], hasLength(2));
+      expect(merged.aliases['b']![0][0].command, equals('base-b'));
+      expect(merged.aliases['b']![1][0].command, equals('override-b'));
+      expect(merged.aliases['c']![0][0].command, equals('override-c'));
     });
 
     test('merge settings from override take effect', () {

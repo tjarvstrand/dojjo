@@ -29,6 +29,10 @@ sealed class WorkspaceInfo with _$WorkspaceInfo {
     required bool empty,
     required bool current,
     required int modifiedFiles,
+    @Default('') String age,
+    @Default('') String path,
+    @Default(0) int insertions,
+    @Default(0) int deletions,
   }) = _WorkspaceInfo;
 
   factory WorkspaceInfo.fromJson(Map<String, Object?> json) => _$WorkspaceInfoFromJson(json);
@@ -42,7 +46,8 @@ const _listTemplate =
     'self.target().description().first_line() ++ "\\t" ++ '
     'self.target().conflict() ++ "\\t" ++ self.target().divergent() ++ "\\t" ++ '
     'self.target().empty() ++ "\\t" ++ self.target().current_working_copy() ++ "\\t" ++ '
-    'self.target().diff().files().len() ++ "\\n"';
+    'self.target().diff().files().len() ++ "\\t" ++ '
+    'self.target().committer().timestamp().ago() ++ "\\n"';
 
 Future<ShellResult> _run(List<String> args) async {
   if (verbose) {
@@ -67,8 +72,8 @@ Future<ShellResult> _run(List<String> args) async {
 
 List<WorkspaceInfo> parseWorkspaceList(String output) => output.nonEmptyLines.map((line) {
   final parts = line.split('\t');
-  if (parts.length != 9) {
-    throw FormatException('Expected 9 tab-separated fields from jj workspace list, got ${parts.length}: $line');
+  if (parts.length != 10) {
+    throw FormatException('Expected 10 tab-separated fields from jj workspace list, got ${parts.length}: $line');
   }
   return WorkspaceInfo(
     name: parts[0],
@@ -80,6 +85,7 @@ List<WorkspaceInfo> parseWorkspaceList(String output) => output.nonEmptyLines.ma
     empty: parts[6] == 'true',
     current: parts[7] == 'true',
     modifiedFiles: int.tryParse(parts[8]) ?? 0,
+    age: parts[9],
   );
 }).toList();
 
@@ -96,6 +102,68 @@ Future<String?> workspaceList() async => (await _run(['workspace', 'list'])).std
 Future<List<WorkspaceInfo>> workspaceListRich() async {
   final result = await _run(['workspace', 'list', '-T', _listTemplate]);
   return result.stdout != null ? parseWorkspaceList(result.stdout!) : [];
+}
+
+/// Parse a jj diff.stat() summary line like "8 files changed, 148 insertions(+), 36 deletions(-)".
+({int insertions, int deletions}) parseDiffStatSummary(String summary) {
+  final insertionsMatch = RegExp(r'(\d+) insertions?\(\+\)').firstMatch(summary);
+  final deletionsMatch = RegExp(r'(\d+) deletions?\(-\)').firstMatch(summary);
+  return (
+    insertions: insertionsMatch != null ? int.parse(insertionsMatch.group(1)!) : 0,
+    deletions: deletionsMatch != null ? int.parse(deletionsMatch.group(1)!) : 0,
+  );
+}
+
+/// Fetch paths and diff stats for all workspaces in parallel.
+Future<List<WorkspaceInfo>> enrichWorkspaces(List<WorkspaceInfo> workspaces) async {
+  // Fetch paths in parallel.
+  final pathFutures = workspaces.map((workspace) async {
+    try {
+      return await workspaceRoot(workspace.name);
+    } on CommandError {
+      return '';
+    }
+  });
+  final paths = await Future.wait(pathFutures);
+
+  // Fetch diff stats for all working copies in one jj call.
+  // Each workspace's stat output ends with a summary line, separated by a marker.
+  final diffStats = <String, ({int insertions, int deletions})>{};
+  try {
+    final result = await _run([
+      'log',
+      '-r',
+      'working_copies()',
+      '--no-graph',
+      '-T',
+      r'change_id.short() ++ "\t" ++ diff.stat(0) ++ "===\n"',
+    ]);
+    if (result.stdout != null) {
+      for (final block in result.stdout!.split('===\n')) {
+        final trimmed = block.trim();
+        if (trimmed.isEmpty) continue;
+        final lines = trimmed.split('\n');
+        // First line starts with changeId\t
+        final firstTab = lines.first.indexOf('\t');
+        if (firstTab == -1) continue;
+        final changeId = lines.first.substring(0, firstTab);
+        // Summary is the last line.
+        final summary = lines.last;
+        diffStats[changeId] = parseDiffStatSummary(summary);
+      }
+    }
+  } on CommandError {
+    // Can't get diff stats — leave as zeros.
+  }
+
+  return [
+    for (var i = 0; i < workspaces.length; i++)
+      workspaces[i].copyWith(
+        path: paths[i],
+        insertions: diffStats[workspaces[i].changeId]?.insertions ?? 0,
+        deletions: diffStats[workspaces[i].changeId]?.deletions ?? 0,
+      ),
+  ];
 }
 
 Future<String?> workspaceUpdateStale() async => (await _run(['workspace', 'update-stale'])).stdout;

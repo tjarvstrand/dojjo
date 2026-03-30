@@ -14,6 +14,10 @@ WorkspaceInfo ws({
   bool empty = false,
   bool current = false,
   int modifiedFiles = 0,
+  String age = '',
+  String path = '',
+  int insertions = 0,
+  int deletions = 0,
 }) => WorkspaceInfo(
   name: name,
   changeId: changeId,
@@ -24,6 +28,10 @@ WorkspaceInfo ws({
   empty: empty,
   current: current,
   modifiedFiles: modifiedFiles,
+  age: age,
+  path: path,
+  insertions: insertions,
+  deletions: deletions,
 );
 
 void main() {
@@ -135,6 +143,62 @@ void main() {
       // Should be valid JSON
       final parsed = (jsonDecode(json) as List<Object?>).first! as Map<String, Object?>;
       expect(parsed['description'], equals('say "hello"'));
+    });
+  });
+
+  group('formatWorkspaceTable', () {
+    test('returns empty string for empty list', () {
+      expect(formatWorkspaceTable([]), isEmpty);
+    });
+
+    test('includes header row', () {
+      final output = formatWorkspaceTable([ws()]);
+      final lines = output.split('\n');
+      expect(lines.first, contains('Name'));
+      expect(lines.first, contains('Commit'));
+      expect(lines.first, contains('Age'));
+      expect(lines.first, contains('Path'));
+    });
+
+    test('shows current workspace marker', () {
+      final output = formatWorkspaceTable([ws(current: true)]);
+      final dataLine = output.split('\n')[1];
+      expect(dataLine, startsWith('*'));
+    });
+
+    test('shows diff stats', () {
+      final output = formatWorkspaceTable([ws(insertions: 10, deletions: 3)]);
+      expect(output, contains('+10 -3'));
+    });
+
+    test('omits diff stats for empty workspace with no changes', () {
+      final output = formatWorkspaceTable([ws(empty: true)]);
+      final dataLine = output.split('\n')[1];
+      expect(dataLine, isNot(contains('+0')));
+    });
+
+    test('shows age', () {
+      final output = formatWorkspaceTable([ws(age: '2 hours ago')]);
+      expect(output, contains('2 hours ago'));
+    });
+
+    test('shows path', () {
+      final output = formatWorkspaceTable([ws(path: '/home/user/repo')]);
+      expect(output, contains('/home/user/repo'));
+    });
+
+    test('aligns columns across rows', () {
+      final output = formatWorkspaceTable([
+        ws(name: 'short', changeId: 'abc'),
+        ws(name: 'much-longer-name', changeId: 'xyz'),
+      ]);
+      final lines = output.split('\n');
+      // Header and both data rows should have Commit column at the same position.
+      final headerCommitPos = lines[0].indexOf('Commit');
+      final row1CommitStart = lines[1].indexOf('abc');
+      final row2CommitStart = lines[2].indexOf('xyz');
+      expect(row1CommitStart, equals(row2CommitStart));
+      expect(row1CommitStart, equals(headerCommitPos));
     });
   });
 }

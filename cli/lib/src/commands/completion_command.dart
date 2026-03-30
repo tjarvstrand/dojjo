@@ -35,7 +35,7 @@ const _bash = r'''_djo_complete() {
   COMPREPLY=()
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD-1]}"
-  commands="config copy-ignored for-each help hook list merge prune remove shell switch update-stale"
+  commands="config copy-ignored for-each help hook list merge prune remove run shell switch update-stale"
 
   case "${COMP_WORDS[1]}" in
     switch|remove|copy-ignored|hook)
@@ -74,6 +74,7 @@ _djo() {
     'merge:Squash, rebase, move bookmark, and clean up'
     'prune:Remove merged workspaces'
     'remove:Forget a workspace and delete its directory'
+    'run:Run a configured alias command'
     'shell:Shell integration commands'
     'switch:Create or switch to a workspace'
     'update-stale:Update stale workspaces'
@@ -125,6 +126,7 @@ complete -c djo -n __fish_use_subcommand -a list -d 'List all jj workspaces'
 complete -c djo -n __fish_use_subcommand -a merge -d 'Squash, rebase, move bookmark, and clean up'
 complete -c djo -n __fish_use_subcommand -a prune -d 'Remove merged workspaces'
 complete -c djo -n __fish_use_subcommand -a remove -d 'Forget a workspace and delete its directory'
+complete -c djo -n __fish_use_subcommand -a run -d 'Run a configured alias command'
 complete -c djo -n __fish_use_subcommand -a shell -d 'Shell integration commands'
 complete -c djo -n __fish_use_subcommand -a switch -d 'Create or switch to a workspace'
 complete -c djo -n __fish_use_subcommand -a update-stale -d 'Update stale workspaces'
@@ -155,6 +157,7 @@ const _pwsh = r'''Register-ArgumentCompleter -CommandName djo -ScriptBlock {
     @{Name='merge'; Tooltip='Squash, rebase, move bookmark, and clean up'}
     @{Name='prune'; Tooltip='Remove merged workspaces'}
     @{Name='remove'; Tooltip='Forget a workspace and delete its directory'}
+    @{Name='run'; Tooltip='Run a configured alias command'}
     @{Name='shell'; Tooltip='Shell integration commands'}
     @{Name='switch'; Tooltip='Create or switch to a workspace'}
     @{Name='update-stale'; Tooltip='Update stale workspaces'}

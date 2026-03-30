@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `run` command to execute configured alias commands with Jinja template expansion
+- Aliases now support all three config forms: simple string, named parallel commands, and pipeline (sequential steps)
+- `list --full` flag showing path, commit ID, age, and diff stats (insertions/deletions) in a table format
+
 ### Fixed
 
 - `switch` command now shows the real resolved path instead of paths containing `/../`

@@ -34,6 +34,10 @@ mise run analyze       # Static analysis
 mise run format-check  # Formatting
 ```
 
+## Debugging
+
+Never speculate about root causes of issues. Always verify with sources or say "I don't know". Only state causes that can be confirmed through code reading, documentation, or reproduction.
+
 ## Build
 
 The CLI lives in `cli/`. It's a Dart project compiled to a native binary.

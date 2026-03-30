@@ -58,9 +58,6 @@ sealed class IgnoreWorktrunkHooks with _$IgnoreWorktrunkHooks {
   const factory IgnoreWorktrunkHooks.types(List<String> types) = IgnoreWorktrunkHooksTypes;
 }
 
-Map<String, String> _aliasesFromJson(Map<String, Object?>? json) =>
-    json?.map((key, value) => MapEntry(key, value as String? ?? '')) ?? {};
-
 @freezed
 sealed class Config with _$Config {
   @JsonSerializable(fieldRename: FieldRename.kebab)
@@ -70,7 +67,7 @@ sealed class Config with _$Config {
     @Default(MergeConfig()) MergeConfig merge,
     @Default(ListConfig()) ListConfig list,
     @Default(CopyIgnoredConfig()) CopyIgnoredConfig copyIgnored,
-    @Default(<String, String>{}) @JsonKey(fromJson: _aliasesFromJson) Map<String, String> aliases,
+    @Default(<String, HookPipeline>{}) @JsonKey(includeFromJson: false, includeToJson: false) HookMap aliases,
     @Default(<String, HookPipeline>{}) @JsonKey(includeFromJson: false, includeToJson: false) HookMap hooks,
     @Default(IgnoreWorktrunkHooks.none())
     @JsonKey(includeFromJson: false, includeToJson: false)
@@ -134,7 +131,9 @@ Map<String, Object?> _toTomlMap(String content) {
 Config _mapToConfig(Map<String, Object?> map) {
   final config = Config.fromJson(map);
   final hooksMap = map['hooks'];
+  final aliasesMap = map['aliases'];
   return config.copyWith(
+    aliases: aliasesMap is Map<String, Object?> ? _parseHooks(aliasesMap) : const {},
     hooks: hooksMap is Map<String, Object?> ? _parseHooks(hooksMap) : const {},
     ignoreWorktrunkHooks: _parseIgnoreWorktrunkHooks(map['ignore-worktrunk-hooks']),
   );
@@ -151,6 +150,11 @@ IgnoreWorktrunkHooks _parseIgnoreWorktrunkHooks(Object? value) {
 HookMap _parseHooksFromMap(Map<String, Object?> map) {
   final hooksMap = map['hooks'];
   return hooksMap is Map<String, Object?> ? _parseHooks(hooksMap) : const {};
+}
+
+HookMap _parseAliasesFromMap(Map<String, Object?> map) {
+  final aliasesMap = map['aliases'];
+  return aliasesMap is Map<String, Object?> ? _parseHooks(aliasesMap) : const {};
 }
 
 /// Deep-merge two maps. Nested maps are merged recursively;
@@ -264,26 +268,30 @@ Future<ConfigWithSource> loadConfig({String? projectRoot}) async {
 
   final sources = <String>[];
 
-  // Load worktrunk configs — deep-merge maps, append hooks.
+  // Load worktrunk configs — deep-merge maps, append hooks and aliases.
   var wtMap = <String, Object?>{};
   var wtHooks = const <String, HookPipeline>{};
+  var wtAliases = const <String, HookPipeline>{};
   for (final (path, label) in wtPaths) {
     final map = await _tryLoadMap(path);
     if (map != null) {
       wtMap = _deepMerge(wtMap, map);
       wtHooks = _mergeHooks(wtHooks, _parseHooksFromMap(map));
+      wtAliases = _mergeHooks(wtAliases, _parseAliasesFromMap(map));
       sources.add('$label: $path');
     }
   }
 
-  // Load dojjo configs — deep-merge maps, append hooks.
+  // Load dojjo configs — deep-merge maps, append hooks and aliases.
   var djoMap = <String, Object?>{};
   var djoHooks = const <String, HookPipeline>{};
+  var djoAliases = const <String, HookPipeline>{};
   for (final (path, label) in djoPaths) {
     final map = await _tryLoadMap(path);
     if (map != null) {
       djoMap = _deepMerge(djoMap, map);
       djoHooks = _mergeHooks(djoHooks, _parseHooksFromMap(map));
+      djoAliases = _mergeHooks(djoAliases, _parseAliasesFromMap(map));
       sources.add('$label: $path');
     }
   }
@@ -293,9 +301,9 @@ Future<ConfigWithSource> loadConfig({String? projectRoot}) async {
 
   // Deep-merge scalar config (dojjo overrides worktrunk).
   final mergedMap = _deepMerge(wtMap, djoMap);
-  final config = _mapToConfig(
-    mergedMap,
-  ).copyWith(hooks: _mergeHooks(filteredWtHooks, djoHooks)).let(_applyEnvOverrides);
+  final config = _mapToConfig(mergedMap)
+      .copyWith(aliases: _mergeHooks(wtAliases, djoAliases), hooks: _mergeHooks(filteredWtHooks, djoHooks))
+      .let(_applyEnvOverrides);
 
   return ConfigWithSource(config: config, sources: sources);
 }
@@ -306,9 +314,10 @@ Config mergeToml(String base, String override) {
   final baseMap = _toTomlMap(base);
   final overrideMap = _toTomlMap(override);
   final mergedMap = _deepMerge(baseMap, overrideMap);
-  return _mapToConfig(
-    mergedMap,
-  ).copyWith(hooks: _mergeHooks(_parseHooksFromMap(baseMap), _parseHooksFromMap(overrideMap)));
+  return _mapToConfig(mergedMap).copyWith(
+    aliases: _mergeHooks(_parseAliasesFromMap(baseMap), _parseAliasesFromMap(overrideMap)),
+    hooks: _mergeHooks(_parseHooksFromMap(baseMap), _parseHooksFromMap(overrideMap)),
+  );
 }
 
 Config applyEnvOverrides(Config config) => _applyEnvOverrides(config);

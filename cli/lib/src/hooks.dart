@@ -10,10 +10,10 @@ final _wtStepPattern = RegExp(r'\bwt\s+step\s+');
 final _wtPattern = RegExp(r'\bwt\s+');
 
 /// Rewrite worktrunk commands to djo equivalents.
-/// `wt step copy-ignored ...` → `djo copy-ignored ...`
+/// `wt step <alias> ...` → `djo run <alias> ...`
 /// `wt merge ...` → `djo merge ...`
 String rewriteWorktrunkCommands(String command) =>
-    command.replaceAll(_wtStepPattern, 'djo ').replaceAll(_wtPattern, 'djo ');
+    command.replaceAll(_wtStepPattern, 'djo run ').replaceAll(_wtPattern, 'djo ');
 
 /// Run all hooks for a given type.
 ///
@@ -37,11 +37,22 @@ Future<void> runHooks(
   final context = await buildFullContext(name: name, path: path, hookType: hookType, target: target);
 
   if (isBlocking) {
-    await _runPipeline(pipeline, context, path, blocking: true);
+    await _runPipeline(pipeline, context, path, blocking: true, label: hookType);
   } else {
     // Post-hooks run in the background — don't await.
-    unawaited(_runPipeline(pipeline, context, path, blocking: false));
+    unawaited(_runPipeline(pipeline, context, path, blocking: false, label: hookType));
   }
+}
+
+/// Run an alias pipeline (always blocking, aborts on failure).
+Future<void> runAlias(
+  String alias, {
+  required HookPipeline pipeline,
+  required String name,
+  required String path,
+}) async {
+  final context = await buildFullContext(name: name, path: path);
+  await _runPipeline(pipeline, context, path, blocking: true, label: alias);
 }
 
 Future<void> _runPipeline(
@@ -49,14 +60,17 @@ Future<void> _runPipeline(
   Map<String, Object?> context,
   String workingDirectory, {
   required bool blocking,
+  required String label,
 }) async {
   for (final step in pipeline) {
     if (step.length == 1) {
       // Single command — run directly.
-      await _runEntry(step.first, context, workingDirectory, blocking: blocking);
+      await _runEntry(step.first, context, workingDirectory, blocking: blocking, label: label);
     } else {
       // Multiple commands — run in parallel, wait for all.
-      final futures = step.map((entry) => _runEntry(entry, context, workingDirectory, blocking: blocking));
+      final futures = step.map(
+        (entry) => _runEntry(entry, context, workingDirectory, blocking: blocking, label: label),
+      );
       await Future.wait(futures);
     }
   }
@@ -67,12 +81,12 @@ Future<void> _runEntry(
   Map<String, Object?> context,
   String workingDirectory, {
   required bool blocking,
+  required String label,
 }) async {
   final entryContext = {...context, 'hook_name': entry.name};
   final rendered = rewriteWorktrunkCommands(render(entry.command, entryContext));
-  final hookType = context['hook_type'] ?? '';
 
-  stderr.writeln('hook($hookType/${entry.name}): $rendered');
+  stderr.writeln('$label(${entry.name}): $rendered');
 
   final result = await runShellCommand(rendered, workingDirectory: workingDirectory);
 
@@ -81,8 +95,8 @@ Future<void> _runEntry(
 
   if (result.exitCode != 0) {
     if (blocking) {
-      throw Exception('Hook $hookType/${entry.name} failed with exit code ${result.exitCode}');
+      throw Exception('$label/${entry.name} failed with exit code ${result.exitCode}');
     }
-    stderr.writeln('hook($hookType/${entry.name}) failed (exit ${result.exitCode}), continuing');
+    stderr.writeln('$label(${entry.name}) failed (exit ${result.exitCode}), continuing');
   }
 }

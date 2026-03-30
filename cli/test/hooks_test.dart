@@ -3,8 +3,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('rewriteWorktrunkCommands', () {
-    test('rewrites wt step to djo', () {
-      expect(rewriteWorktrunkCommands('wt step copy-ignored default'), equals('djo copy-ignored default'));
+    test('rewrites wt step to djo run', () {
+      expect(rewriteWorktrunkCommands('wt step copy-ignored default'), equals('djo run copy-ignored default'));
     });
 
     test('rewrites wt to djo', () {
@@ -18,7 +18,7 @@ void main() {
     test('handles wt in the middle of a command', () {
       expect(
         rewriteWorktrunkCommands('echo hello && wt step copy-ignored default'),
-        equals('echo hello && djo copy-ignored default'),
+        equals('echo hello && djo run copy-ignored default'),
       );
     });
 
