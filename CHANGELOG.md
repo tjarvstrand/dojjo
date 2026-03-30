@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Post-remove and post-merge hooks now run from the primary workspace directory instead of the deleted directory
+- `parseWorkspaceList` throws a descriptive `FormatException` instead of a `RangeError` on malformed jj output
+- Previous workspace state is no longer saved until the switch actually succeeds
+- `switch -x` command output is now written to stdout instead of stderr
+
 ## [0.1.0+2] - 2026-03-29
 
 ### Added
