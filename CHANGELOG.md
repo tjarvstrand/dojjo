@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `switch` command now shows the real resolved path instead of paths containing `/../`
 - Project config is now resolved from the workspace root instead of the current directory, matching worktrunk's behavior
+- `switch -c` with `--bookmark` now creates the bookmark on the new workspace's revision instead of the current one
 
 ## [0.1.2] - 2026-03-30
 

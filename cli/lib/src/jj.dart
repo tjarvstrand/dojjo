@@ -182,7 +182,12 @@ Future<String> workspaceRoot([String? name]) async {
   return stdout;
 }
 
-Future<void> bookmarkCreate(String name) => _run(['bookmark', 'create', name]);
+Future<void> bookmarkCreate(String name, {String? revision}) => _run([
+  'bookmark',
+  'create',
+  if (revision != null) ...['-r', revision],
+  name,
+]);
 
 Future<void> bookmarkDelete(String name) => _run(['bookmark', 'delete', name]);
 

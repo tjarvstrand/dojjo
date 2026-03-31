@@ -5,6 +5,7 @@ import 'package:dojjo/src/config.dart';
 import 'package:dojjo/src/hooks.dart';
 import 'package:dojjo/src/jj.dart';
 import 'package:dojjo/src/prompt.dart';
+import 'package:dojjo/src/state.dart';
 
 class RemoveCommand extends Command<void> {
   RemoveCommand(this._config) {
@@ -28,11 +29,16 @@ class RemoveCommand extends Command<void> {
     final keepBookmark = argResults!.flag('keep-bookmark');
     final skipHooks = argResults!.flag('skip-hooks');
     final rest = argResults!.rest;
-    if (rest.isEmpty) {
+
+    final workspaces = await workspaceListRich();
+    final current = workspaces.where((workspace) => workspace.current).firstOrNull;
+
+    final name = rest.isEmpty ? current?.name : rest.first;
+    if (name == null) {
       usageException('Missing required argument: <name>');
     }
-    final name = rest.first;
 
+    final removingCurrent = name == current?.name;
     final root = await workspaceRoot(name);
     stderr.writeln("Will forget workspace '$name'${keepBookmark ? '' : ', delete bookmark'}, and delete $root");
     await confirmOrAbort('Proceed?', yes: yes);
@@ -55,6 +61,14 @@ class RemoveCommand extends Command<void> {
     if (!skipHooks) {
       final primaryRoot = await workspaceRoot('default');
       await runHooks('post-remove', hooks: _config.hooks, name: name, path: primaryRoot);
+    }
+
+    if (removingCurrent) {
+      final previous = await loadPreviousWorkspace();
+      if (previous != null) {
+        final previousRoot = await workspaceRoot(previous);
+        stdout.writeln(previousRoot);
+      }
     }
   }
 }

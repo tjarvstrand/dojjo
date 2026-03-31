@@ -37,7 +37,7 @@ class SwitchCommand extends Command<void> {
         : p.join(root, '..', name);
     await workspaceAdd(path, name: name, revision: revision);
     if (createBookmark) {
-      await bookmarkCreate(name);
+      await bookmarkCreate(name, revision: '$name@');
       try {
         await bookmarkTrack(name, remote: 'origin');
       } on CommandError {
