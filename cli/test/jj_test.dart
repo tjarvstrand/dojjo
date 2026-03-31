@@ -5,7 +5,7 @@ void main() {
   final defaultWs = WorkspaceInfo(
     name: 'default',
     changeId: 'uprnywsvpzrk',
-    bookmarks: '',
+    bookmarks: [],
     description: 'Use zio-logging',
     conflict: false,
     divergent: false,
@@ -29,7 +29,7 @@ void main() {
       expect(result, hasLength(2));
       expect(result[0].name, equals('default'));
       expect(result[1].name, equals('feature'));
-      expect(result[1].bookmarks, equals('main'));
+      expect(result[1].bookmarks, equals(['main']));
       expect(result[1].conflict, isTrue);
       expect(result[1].current, isFalse);
       expect(result[1].modifiedFiles, equals(7));
@@ -47,12 +47,12 @@ void main() {
 
     test('parses empty bookmarks field', () {
       const input = 'ws\tid\t\tdesc\tfalse\tfalse\tfalse\ttrue\t0\t5 minutes ago';
-      expect(parseWorkspaceList(input).first.bookmarks, isEmpty);
+      expect(parseWorkspaceList(input).first.bookmarks, equals(<String>[]));
     });
 
     test('parses multiple bookmarks', () {
       const input = 'ws\tid\tmain,feature\tdesc\tfalse\tfalse\tfalse\ttrue\t0\t5 minutes ago';
-      expect(parseWorkspaceList(input).first.bookmarks, equals('main,feature'));
+      expect(parseWorkspaceList(input).first.bookmarks, equals(['main', 'feature']));
     });
 
     test('parses empty description', () {

@@ -18,4 +18,5 @@ extension StringExt on String {
 
 extension FutureExt<T> on Future<T> {
   Future<T?> get orNull => onError((_, _) => Future.value());
+  Future<T> ignoreErrors<E extends Object>() => onError<E>((_, _) => Future.value());
 }

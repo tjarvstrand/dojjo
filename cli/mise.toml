@@ -1,10 +1,10 @@
 [tools]
 dart = "3.11.2"
 
-[prepare.dart]
-run = "dart pub get"
-sources = ["pubspec.yaml"]
-outputs = [".dart_tool/package_config.json"]
+[hooks]
+postinstall = [
+    { task = ":generate" },
+]
 
 [tasks.deps]
 run = "dart pub get && touch .dart_tool/package_config.json"

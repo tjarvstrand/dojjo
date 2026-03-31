@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:dojjo/src/platform.dart';
 import 'package:dojjo/src/util/extensions.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -22,7 +23,7 @@ sealed class WorkspaceInfo with _$WorkspaceInfo {
   const factory WorkspaceInfo({
     required String name,
     required String changeId,
-    required String bookmarks,
+    required List<String> bookmarks,
     required String description,
     required bool conflict,
     required bool divergent,
@@ -78,7 +79,7 @@ List<WorkspaceInfo> parseWorkspaceList(String output) => output.nonEmptyLines.ma
   return WorkspaceInfo(
     name: parts[0],
     changeId: parts[1],
-    bookmarks: parts[2],
+    bookmarks: parts[2].split(',').where((bookmark) => bookmark.isNotEmpty).toList(),
     description: parts[3],
     conflict: parts[4] == 'true',
     divergent: parts[5] == 'true',
@@ -101,18 +102,14 @@ Future<String?> workspaceList() async => (await _run(['workspace', 'list'])).std
 
 Future<List<WorkspaceInfo>> workspaceListRich() async {
   final result = await _run(['workspace', 'list', '-T', _listTemplate]);
-  return result.stdout != null ? parseWorkspaceList(result.stdout!) : [];
+  return result.stdout?.let(parseWorkspaceList) ?? [];
 }
 
 /// Parse a jj diff.stat() summary line like "8 files changed, 148 insertions(+), 36 deletions(-)".
-({int insertions, int deletions}) parseDiffStatSummary(String summary) {
-  final insertionsMatch = RegExp(r'(\d+) insertions?\(\+\)').firstMatch(summary);
-  final deletionsMatch = RegExp(r'(\d+) deletions?\(-\)').firstMatch(summary);
-  return (
-    insertions: insertionsMatch != null ? int.parse(insertionsMatch.group(1)!) : 0,
-    deletions: deletionsMatch != null ? int.parse(deletionsMatch.group(1)!) : 0,
-  );
-}
+({int insertions, int deletions}) parseDiffStatSummary(String summary) => (
+  insertions: RegExp(r'(\d+) insertions?\(\+\)').firstMatch(summary)?.group(1)?.let(int.parse) ?? 0,
+  deletions: RegExp(r'(\d+) deletions?\(-\)').firstMatch(summary)?.group(1)?.let(int.parse) ?? 0,
+);
 
 /// Fetch paths and diff stats for all workspaces in parallel.
 Future<List<WorkspaceInfo>> enrichWorkspaces(List<WorkspaceInfo> workspaces) async {
@@ -128,42 +125,42 @@ Future<List<WorkspaceInfo>> enrichWorkspaces(List<WorkspaceInfo> workspaces) asy
 
   // Fetch diff stats for all working copies in one jj call.
   // Each workspace's stat output ends with a summary line, separated by a marker.
-  final diffStats = <String, ({int insertions, int deletions})>{};
-  try {
-    final result = await _run([
-      'log',
-      '-r',
-      'working_copies()',
-      '--no-graph',
-      '-T',
-      r'change_id.short() ++ "\t" ++ diff.stat(0) ++ "===\n"',
-    ]);
-    if (result.stdout != null) {
-      for (final block in result.stdout!.split('===\n')) {
-        final trimmed = block.trim();
-        if (trimmed.isEmpty) continue;
-        final lines = trimmed.split('\n');
-        // First line starts with changeId\t
-        final firstTab = lines.first.indexOf('\t');
-        if (firstTab == -1) continue;
-        final changeId = lines.first.substring(0, firstTab);
-        // Summary is the last line.
-        final summary = lines.last;
-        diffStats[changeId] = parseDiffStatSummary(summary);
-      }
-    }
-  } on CommandError {
-    // Can't get diff stats — leave as zeros.
-  }
+  final result = await _run([
+    'log',
+    '-r',
+    'working_copies()',
+    '--no-graph',
+    '-T',
+    r'change_id.short() ++ "\t" ++ diff.stat(0) ++ "===\n"',
+  ]).ignoreErrors<CommandError>();
 
-  return [
-    for (var i = 0; i < workspaces.length; i++)
-      workspaces[i].copyWith(
-        path: paths[i],
-        insertions: diffStats[workspaces[i].changeId]?.insertions ?? 0,
-        deletions: diffStats[workspaces[i].changeId]?.deletions ?? 0,
-      ),
-  ];
+  final diffStats =
+      result.stdout
+          ?.split('===\n')
+          .expand((block) sync* {
+            final trimmed = block.trim();
+            if (trimmed.isEmpty) return;
+            final lines = trimmed.split('\n');
+            // First line starts with changeId\t
+            final firstTab = lines.first.indexOf('\t');
+            if (firstTab == -1) return;
+            final changeId = lines.first.substring(0, firstTab);
+            // Summary is the last line.
+            final summary = lines.last;
+            yield MapEntry(changeId, parseDiffStatSummary(summary));
+          })
+          .let(Map.fromEntries) ??
+      {};
+
+  return workspaces
+      .mapIndexed(
+        (index, workspace) => workspace.copyWith(
+          path: paths[index],
+          insertions: diffStats[workspace.changeId]?.insertions ?? 0,
+          deletions: diffStats[workspace.changeId]?.deletions ?? 0,
+        ),
+      )
+      .toList();
 }
 
 Future<String?> workspaceUpdateStale() async => (await _run(['workspace', 'update-stale'])).stdout;
@@ -190,6 +187,8 @@ Future<void> bookmarkCreate(String name, {String? revision}) => _run([
 ]);
 
 Future<void> bookmarkDelete(String name) => _run(['bookmark', 'delete', name]);
+
+Future<void> abandon(String revset) => _run(['abandon', revset]);
 
 Future<void> bookmarkSet(String name, String revision) => _run(['bookmark', 'set', name, '-r', revision]);
 

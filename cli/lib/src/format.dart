@@ -9,7 +9,7 @@ String formatWorkspace(WorkspaceInfo workspace) {
   final marker = workspace.current ? '* ' : '  ';
   final flags = [if (workspace.conflict) '\u2718', if (workspace.divergent) '\u2195'];
   final flagString = flags.isEmpty ? '' : ' ${flags.join(' ')}';
-  final bookmarks = workspace.bookmarks.isEmpty ? '' : ' [${workspace.bookmarks}]';
+  final bookmarks = workspace.bookmarks.isEmpty ? '' : ' [${workspace.bookmarks.join(',')}]';
   final files = workspace.empty ? '' : ' (${workspace.modifiedFiles} files)';
   final description = workspace.description.isEmpty ? '' : ' ${workspace.description}';
   return '$marker${workspace.name}$bookmarks$flagString$description$files';
@@ -52,7 +52,7 @@ List<String> _tableRow(WorkspaceInfo workspace) {
   return [
     marker,
     '${workspace.name}$flagString',
-    workspace.bookmarks,
+    workspace.bookmarks.join(','),
     workspace.changeId,
     workspace.age,
     diff,

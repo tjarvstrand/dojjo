@@ -27,7 +27,7 @@ class PruneCommand extends Command<void> {
       if (workspace.current) continue;
       if (workspace.bookmarks.isEmpty) continue;
 
-      final bookmark = workspace.bookmarks.split(',').first;
+      final bookmark = workspace.bookmarks.first;
       final merged = await revsetMatches('$bookmark & ancestors(trunk())');
       if (merged) {
         pruneable.add(workspace);
@@ -41,7 +41,7 @@ class PruneCommand extends Command<void> {
 
     stderr.writeln('Workspaces merged into trunk:');
     for (final workspace in pruneable) {
-      stderr.writeln('  ${workspace.name} [${workspace.bookmarks}]');
+      stderr.writeln('  ${workspace.name} [${workspace.bookmarks.join(',')}]');
     }
 
     await confirmOrAbort('Remove ${pruneable.length} workspace(s)?', yes: yes);
@@ -50,7 +50,7 @@ class PruneCommand extends Command<void> {
       final root = await workspaceRoot(workspace.name);
       await workspaceForget(workspace.name);
       try {
-        await bookmarkDelete(workspace.bookmarks.split(',').first);
+        await bookmarkDelete(workspace.bookmarks.first);
       } on CommandError {
         // Bookmark may not exist.
       }

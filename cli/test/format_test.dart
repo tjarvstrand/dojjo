@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 WorkspaceInfo ws({
   String name = 'default',
   String changeId = 'abc123',
-  String bookmarks = '',
+  List<String> bookmarks = const [],
   String description = '',
   bool conflict = false,
   bool divergent = false,
@@ -45,7 +45,7 @@ void main() {
     });
 
     test('shows bookmark in brackets', () {
-      expect(formatWorkspace(ws(bookmarks: 'main')), contains('[main]'));
+      expect(formatWorkspace(ws(bookmarks: ['main'])), contains('[main]'));
     });
 
     test('omits bracket when no bookmarks', () {
@@ -90,7 +90,7 @@ void main() {
           ws(
             name: 'feature',
             current: true,
-            bookmarks: 'feat-branch',
+            bookmarks: ['feat-branch'],
             conflict: true,
             description: 'WIP',
             modifiedFiles: 3,
@@ -113,7 +113,7 @@ void main() {
         ws(
           name: 'ws',
           changeId: 'id',
-          bookmarks: 'bm',
+          bookmarks: ['bm'],
           description: 'desc',
           conflict: true,
           divergent: true,
@@ -125,7 +125,7 @@ void main() {
       final parsed = (jsonDecode(json) as List<Object?>).first! as Map<String, Object?>;
       expect(parsed['name'], equals('ws'));
       expect(parsed['changeId'], equals('id'));
-      expect(parsed['bookmarks'], equals('bm'));
+      expect(parsed['bookmarks'], equals(['bm']));
       expect(parsed['description'], equals('desc'));
       expect(parsed['conflict'], isTrue);
       expect(parsed['divergent'], isTrue);
