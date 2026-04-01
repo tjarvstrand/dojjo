@@ -6,6 +6,7 @@ import 'package:dojjo/src/hooks.dart';
 import 'package:dojjo/src/jj.dart';
 import 'package:dojjo/src/prompt.dart';
 import 'package:dojjo/src/state.dart';
+import 'package:dojjo/src/util/extensions.dart';
 
 class RemoveCommand extends Command<void> {
   RemoveCommand(this._config) {
@@ -50,44 +51,32 @@ class RemoveCommand extends Command<void> {
       await runHooks('pre-remove', hooks: _config.hooks, name: name, path: root);
     }
 
-    // Determine the revision's change ID before forgetting the workspace.
+    // Resolve paths that we'll need after deletion, while the cwd still exists.
     final changeId = workspace?.changeId;
-
-    // Check if the revision has other bookmarks (besides the one we're deleting).
     final otherBookmarks = workspace?.bookmarks.where((bookmark) => bookmark != name).toList() ?? [];
+    final primaryRoot = skipHooks ? null : await workspaceRoot('default');
+    final previous = removingCurrent ? await loadPreviousWorkspace() : null;
+    final previousRoot = await previous?.let(workspaceRoot);
 
     await workspaceForget(name);
     if (!keepBookmark) {
-      try {
-        await bookmarkDelete(name);
-      } on CommandError {
-        // ignore: bookmark may not exist
-      }
+      await bookmarkDelete(name).ignoreErrors<CommandError>();
     }
 
     // Abandon the revision if no other bookmarks point to it.
     if (!keepRevision && !keepBookmark && otherBookmarks.isEmpty && changeId != null) {
-      try {
-        await abandon(changeId);
-      } on CommandError {
-        // ignore: revision may already be abandoned or immutable
-      }
+      await abandon(changeId).ignoreErrors<CommandError>();
     }
 
     await deleteDirectory(root);
     stderr.writeln("Removed workspace '$name'");
 
-    if (!skipHooks) {
-      final primaryRoot = await workspaceRoot('default');
+    if (!skipHooks && primaryRoot != null) {
       await runHooks('post-remove', hooks: _config.hooks, name: name, path: primaryRoot);
     }
 
-    if (removingCurrent) {
-      final previous = await loadPreviousWorkspace();
-      if (previous != null) {
-        final previousRoot = await workspaceRoot(previous);
-        outputCdPath(previousRoot);
-      }
+    if (previousRoot != null) {
+      outputCdPath(previousRoot);
     }
   }
 }

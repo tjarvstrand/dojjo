@@ -16,7 +16,7 @@ Keep compatibility with worktrunk's **configuration files** (`.config/wt.toml` f
 
 ## Style
 
-Prefer `isEmpty` over `isNotEmpty` in conditionals. Avoid named imports (`as X`) unless there are actual naming conflicts. Exception: `package:path/path.dart as p` is standard Dart convention.
+Prefer `isEmpty` over `isNotEmpty` in conditionals. Avoid named imports (`as X`) unless there are actual naming conflicts. Exception: `package:path/path.dart as p` is standard Dart convention. Avoid declaring variables without initializing them (e.g. `String? x;` assigned later) — prefer initializing at the point of declaration. Prefer error handling methods (e.g. `catchAll`, `onError`, `ignored`, `ignoreErrors`) over `try {} catch {}` blocks.
 
 ## Changelog
 
