@@ -18,7 +18,7 @@ class SwitchCommand extends Command<void> {
       ..addFlag('create', abbr: 'c', defaultsTo: false)
       ..addFlag('bookmark', defaultsTo: _config.createBookmark, help: 'Create a bookmark for the new workspace')
       ..addFlag('skip-hooks', defaultsTo: false, help: 'Skip hooks')
-      ..addOption('base', abbr: 'b', help: 'Base revision for new workspace (defaults to current working-copy parents)')
+      ..addOption('base', abbr: 'b', defaultsTo: 'trunk()', help: 'Base revision for new workspace')
       ..addOption('execute', abbr: 'x', help: 'Command to run in workspace after switching');
   }
 
