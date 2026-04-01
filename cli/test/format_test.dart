@@ -155,7 +155,7 @@ void main() {
       final output = formatWorkspaceTable([ws()]);
       final lines = output.split('\n');
       expect(lines.first, contains('Name'));
-      expect(lines.first, contains('Commit'));
+      expect(lines.first, contains('Revision'));
       expect(lines.first, contains('Age'));
       expect(lines.first, contains('Path'));
     });
@@ -193,8 +193,8 @@ void main() {
         ws(name: 'much-longer-name', changeId: 'xyz'),
       ]);
       final lines = output.split('\n');
-      // Header and both data rows should have Commit column at the same position.
-      final headerCommitPos = lines[0].indexOf('Commit');
+      // Header and both data rows should have Revision column at the same position.
+      final headerCommitPos = lines[0].indexOf('Revision');
       final row1CommitStart = lines[1].indexOf('abc');
       final row2CommitStart = lines[2].indexOf('xyz');
       expect(row1CommitStart, equals(row2CommitStart));

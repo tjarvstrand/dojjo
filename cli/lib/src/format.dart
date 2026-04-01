@@ -19,7 +19,7 @@ String formatWorkspaceTable(List<WorkspaceInfo> workspaces) {
   if (workspaces.isEmpty) return '';
 
   final rows = workspaces.map(_tableRow).toList();
-  final headers = ['', 'Name', 'Bookmarks', 'Commit', 'Age', 'Diff', 'Path', 'Description'];
+  final headers = ['', 'Name', 'Bookmarks', 'Revision', 'Age', 'Diff', 'Path', 'Description'];
 
   // Calculate column widths.
   final widths = List.filled(headers.length, 0);
