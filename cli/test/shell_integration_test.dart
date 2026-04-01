@@ -6,8 +6,8 @@ void main() {
     test('returns bash script for bash', () {
       final script = initScript('bash');
       expect(script, contains('djo()'));
-      expect(script, contains('case'));
-      expect(script, contains('switch|merge'));
+      expect(script, contains('--porcelain'));
+      expect(script, contains('cd:'));
     });
 
     test('returns same script for zsh', () {
@@ -17,15 +17,16 @@ void main() {
     test('returns fish script for fish', () {
       final script = initScript('fish');
       expect(script, contains('function djo'));
-      expect(script, contains('switch merge'));
+      expect(script, contains('--porcelain'));
+      expect(script, contains('cd:'));
     });
 
     test('returns powershell script for pwsh', () {
       final script = initScript('pwsh');
       expect(script, contains('function djo'));
       expect(script, contains('Set-Location'));
-      expect(script, contains('switch'));
-      expect(script, contains('merge'));
+      expect(script, contains('--porcelain'));
+      expect(script, contains('cd:'));
     });
 
     test('powershell alias works', () {
@@ -34,14 +35,6 @@ void main() {
 
     test('returns error for unknown shell', () {
       expect(initScript('ksh'), contains('Unsupported shell'));
-    });
-
-    test('bash script wraps switch and merge with cd', () {
-      expect(initScript('bash'), contains(r'cd "$output"'));
-    });
-
-    test('fish script wraps switch and merge with cd', () {
-      expect(initScript('fish'), contains(r'cd $output'));
     });
 
     test('bash script uses command to bypass function', () {

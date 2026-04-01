@@ -71,7 +71,7 @@ class MergeCommand extends Command<void> {
     }
 
     final primaryRoot = await workspaceRoot('default');
-    stdout.writeln(primaryRoot);
+    outputCdPath(primaryRoot);
 
     if (!skipHooks) {
       await runHooks('post-merge', hooks: _config.hooks, name: name, path: primaryRoot, target: target);

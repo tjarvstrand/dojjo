@@ -86,7 +86,7 @@ class RemoveCommand extends Command<void> {
       final previous = await loadPreviousWorkspace();
       if (previous != null) {
         final previousRoot = await workspaceRoot(previous);
-        stdout.writeln(previousRoot);
+        outputCdPath(previousRoot);
       }
     }
   }

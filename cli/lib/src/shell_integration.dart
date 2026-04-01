@@ -4,43 +4,40 @@ import 'package:dojjo/src/platform.dart';
 import 'package:path/path.dart' as p;
 
 const _bash = r'''djo() {
-  case "$1" in
-    switch|merge)
-      local output
-      output="$(command djo "$@")" || return $?
-      if [ -n "$output" ]; then
-        cd "$output" || return $?
-      fi
-      ;;
-    *)
-      command djo "$@"
-      ;;
-  esac
+  local output line
+  output="$(command djo --porcelain "$@")" || return $?
+  while IFS= read -r line; do
+    case "$line" in
+      cd:*) cd "${line#cd:}" || return $? ;;
+      *) printf '%s\n' "$line" ;;
+    esac
+  done <<< "$output"
 }''';
 
 const _zsh = _bash;
 
 const _fish = r'''function djo
-  switch $argv[1]
-    case switch merge
-      set -l output (command djo $argv); or return $status
-      if test -n "$output"
-        cd $output; or return $status
-      end
-    case '*'
-      command djo $argv
+  set -l output (command djo --porcelain $argv); or return $status
+  for line in $output
+    switch $line
+      case 'cd:*'
+        cd (string sub -s 4 $line); or return $status
+      case '*'
+        echo $line
+    end
   end
 end''';
 
 const _powershell = r'''function djo {
   $djoBin = (Get-Command djo.exe).Source
-  if ($args[0] -in @("switch", "merge")) {
-    $output = & $djoBin @args
-    if ($LASTEXITCODE -eq 0 -and $output) {
-      Set-Location $output
+  $output = & $djoBin --porcelain @args
+  if ($LASTEXITCODE -ne 0) { return }
+  foreach ($line in $output) {
+    if ($line.StartsWith("cd:")) {
+      Set-Location $line.Substring(3)
+    } else {
+      Write-Output $line
     }
-  } else {
-    & $djoBin @args
   }
 }''';
 

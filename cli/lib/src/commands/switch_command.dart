@@ -32,9 +32,11 @@ class SwitchCommand extends Command<void> {
 
   Future<String> _createWorkspace(String name, {String? revision, required bool createBookmark}) async {
     final root = await workspaceRoot();
-    final path = _config.workspacePath.isNotEmpty
-        ? renderTemplate(_config.workspacePath, name: name, repoPath: root)
-        : p.join(root, '..', name);
+    final path = p.canonicalize(
+      _config.workspacePath.isNotEmpty
+          ? renderTemplate(_config.workspacePath, name: name, repoPath: root)
+          : p.join(root, '..', name),
+    );
     await workspaceAdd(path, name: name, revision: revision);
     if (createBookmark) {
       await bookmarkCreate(name, revision: '$name@');
@@ -125,9 +127,9 @@ class SwitchCommand extends Command<void> {
     String path;
     if (create) {
       await _runHook('pre-start', name, '.');
-      path = p.canonicalize(await _createWorkspace(name, revision: base, createBookmark: bookmark));
+      path = await _createWorkspace(name, revision: base, createBookmark: bookmark);
       await currentName?.let(savePreviousWorkspace);
-      stdout.writeln(path);
+      outputCdPath(path);
       await _runHook('post-start', name, path);
     } else {
       await _runHook('pre-switch', name, '.');
@@ -139,9 +141,9 @@ class SwitchCommand extends Command<void> {
           throw Exception('Aborted');
         }
         await _runHook('pre-start', name, '.');
-        path = p.canonicalize(await _createWorkspace(name, revision: base, createBookmark: bookmark));
+        path = await _createWorkspace(name, revision: base, createBookmark: bookmark);
         await currentName?.let(savePreviousWorkspace);
-        stdout.writeln(path);
+        outputCdPath(path);
         await _runHook('post-start', name, path);
         await _runHook('post-switch', name, path);
 
@@ -151,7 +153,7 @@ class SwitchCommand extends Command<void> {
         return;
       }
       await currentName?.let(savePreviousWorkspace);
-      stdout.writeln(path);
+      outputCdPath(path);
       await _runHook('post-switch', name, path);
     }
 

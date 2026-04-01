@@ -40,6 +40,18 @@ sealed class WorkspaceInfo with _$WorkspaceInfo {
 }
 
 var verbose = false;
+var porcelain = false;
+
+/// Write a path to stdout that the shell wrapper should cd into.
+/// In porcelain mode, prefixes with `cd:` so the wrapper can parse it.
+/// In normal mode, just prints the path.
+void outputCdPath(String path) {
+  if (porcelain) {
+    stdout.writeln('cd:$path');
+  } else {
+    stdout.writeln(path);
+  }
+}
 
 const _listTemplate =
     'self.name() ++ "\\t" ++ self.target().change_id().short() ++ "\\t" ++ '
