@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-04-01
+
 ### Added
 
 - `run` command to execute configured alias commands with Jinja template expansion
@@ -85,7 +87,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Jinja2 template variables and filters (`sanitize`, `sanitize_db`, `hash_port`)
 - Environment variable overrides for config values
 
-[Unreleased]: https://github.com/tjarvstrand/dojjo/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/tjarvstrand/dojjo/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/tjarvstrand/dojjo/releases/tag/v0.1.3
 [0.1.2]: https://github.com/tjarvstrand/dojjo/releases/tag/v0.1.2
 [0.1.1]: https://github.com/tjarvstrand/dojjo/releases/tag/v0.1.1
 [0.1.0+2]: https://github.com/tjarvstrand/dojjo/releases/tag/v0.1.0+2

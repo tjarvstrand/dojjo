@@ -1,6 +1,6 @@
 name: dojjo
 description: A workspace manager for jj (Jujutsu) with hooks, shell integration, and worktrunk compatibility.
-version: 0.1.2
+version: 0.1.3
 homepage: https://github.com/tjarvstrand/dojjo
 repository: https://github.com/tjarvstrand/dojjo
 
