@@ -35,7 +35,7 @@ class SwitchCommand extends Command<void> {
     final path = p.canonicalize(
       _config.workspacePath.isNotEmpty
           ? renderTemplate(_config.workspacePath, name: name, repoPath: root)
-          : p.join(root, '..', name),
+          : p.join(root, '..', sanitize(name)),
     );
     await workspaceAdd(path, name: name, revision: revision);
     if (createBookmark) {
