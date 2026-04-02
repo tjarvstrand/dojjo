@@ -147,7 +147,7 @@ Future<List<WorkspaceInfo>> enrichWorkspaces(List<WorkspaceInfo> workspaces) asy
   ]).ignoreErrors<CommandError>();
 
   final diffStats =
-      result.stdout
+      result?.stdout
           ?.split('===\n')
           .expand((block) sync* {
             final trimmed = block.trim();
