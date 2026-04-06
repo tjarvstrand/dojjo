@@ -7,10 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- README badges
+
 ### Fixed
 
 - Fix type of returned values in FutureExt
 - Fix lint failure in djo.dart
+- Fixed release script URL
 
 ### Changed
 

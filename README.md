@@ -1,5 +1,8 @@
 # dojjo
 
+[![CI](https://github.com/tjarvstrand/dojjo/actions/workflows/ci.yaml/badge.svg)](https://github.com/tjarvstrand/dojjo/actions/workflows/ci.yaml)
+[![pub package](https://img.shields.io/pub/v/dojjo.svg)](https://pub.dev/packages/dojjo)
+[![GitHub release](https://img.shields.io/github/v/release/tjarvstrand/dojjo)](https://github.com/tjarvstrand/dojjo/releases/latest)
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
 
 A workspace manager for [jj](https://github.com/jj-vcs/jj).
