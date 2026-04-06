@@ -22,7 +22,7 @@ import 'package:dojjo/src/version.dart';
 Future<void> main(List<String> args) async {
   // Load config from the workspace root, matching worktrunk's behaviour of
   // resolving .config/wt.toml from the worktree root rather than the cwd.
-  String? root = await workspaceRoot().ignoreErrors<CommandError>();
+  final root = await workspaceRoot().ignoreErrors<CommandError>();
   final configWithSource = await loadConfig(projectRoot: root);
   final config = configWithSource.config;
 
