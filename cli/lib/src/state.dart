@@ -4,8 +4,9 @@ import 'package:dojjo/src/jj.dart';
 import 'package:dojjo/src/util/extensions.dart';
 import 'package:path/path.dart' as p;
 
+/// The .jj dir of the default workspace — shared across all workspaces.
 Future<String> _jjDir() async {
-  final root = await workspaceRoot();
+  final root = await workspaceRoot('default');
   return p.join(root, '.jj');
 }
 

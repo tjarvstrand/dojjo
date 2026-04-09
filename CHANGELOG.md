@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Store previous workspace in default workspace instead of locally in each workspace
+- Fall back to default workspace if there is no previous one
+
 ## [0.1.4] - 2026-04-06
 
 ### Added

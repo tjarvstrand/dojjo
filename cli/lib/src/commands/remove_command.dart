@@ -54,9 +54,9 @@ class RemoveCommand extends Command<void> {
     // Resolve paths that we'll need after deletion, while the cwd still exists.
     final changeId = workspace?.changeId;
     final otherBookmarks = workspace?.bookmarks.where((bookmark) => bookmark != name).toList() ?? [];
-    final primaryRoot = skipHooks ? null : await workspaceRoot('default');
+    final defaultRoot = removingCurrent || !skipHooks ? await workspaceRoot('default') : null;
     final previous = removingCurrent ? await loadPreviousWorkspace() : null;
-    final previousRoot = await previous?.let(workspaceRoot);
+    final previousRoot = await previous?.let(workspaceRoot) ?? (removingCurrent ? defaultRoot : null);
 
     await workspaceForget(name);
     if (!keepBookmark) {
@@ -71,8 +71,8 @@ class RemoveCommand extends Command<void> {
     await deleteDirectory(root);
     stderr.writeln("Removed workspace '$name'");
 
-    if (!skipHooks && primaryRoot != null) {
-      await runHooks('post-remove', hooks: _config.hooks, name: name, path: primaryRoot);
+    if (!skipHooks && defaultRoot != null) {
+      await runHooks('post-remove', hooks: _config.hooks, name: name, path: defaultRoot);
     }
 
     if (previousRoot != null) {
