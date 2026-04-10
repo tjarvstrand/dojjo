@@ -47,3 +47,13 @@ Future<ShellResult> runShellCommand(String command, {String? workingDirectory}) 
   final (shell, args) = Platform.isWindows ? ('cmd', ['/c', command]) : ('sh', ['-c', command]);
   return runProcess(shell, args, workingDirectory: workingDirectory);
 }
+
+/// Like [runShellCommand], but streams child stdout and stderr to [sink]
+/// in real-time. Returns the child's exit code.
+Future<int> runShellCommandToSink(String command, {required IOSink sink, String? workingDirectory}) async {
+  final (shell, args) = Platform.isWindows ? ('cmd', ['/c', command]) : ('sh', ['-c', command]);
+  final process = await Process.start(shell, args, workingDirectory: workingDirectory);
+  process.stdout.listen(sink.add);
+  process.stderr.listen(sink.add);
+  return process.exitCode;
+}

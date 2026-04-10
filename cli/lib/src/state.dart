@@ -5,20 +5,19 @@ import 'package:dojjo/src/util/extensions.dart';
 import 'package:path/path.dart' as p;
 
 /// The .jj dir of the default workspace — shared across all workspaces.
-Future<String> _jjDir() async {
-  final root = await workspaceRoot('default');
-  return p.join(root, '.jj');
-}
+Future<String> _jjDir() async => p.join(await workspaceRoot('default'), '.jj');
 
-// --- Previous workspace ---
+Future<File> _jjStateFile() async => File(p.join(await _jjDir(), 'djo-state'));
 
+/// The djo logs directory, shared across all workspaces.
+Future<String> logsDir() async => p.join(await _jjDir(), 'djo', 'logs');
+
+/// Load the previous workspace name.
 Future<String?> loadPreviousWorkspace() async {
   try {
-    final path = p.join(await _jjDir(), 'djo-state');
-    final file = File(path);
-    if (await file.exists()) {
-      final content = (await file.readAsString()).trim();
-      return content.nonEmptyOrNull;
+    final file = await _jjStateFile();
+    if (file.existsSync()) {
+      return file.readAsStringSync().trim().nonEmptyOrNull;
     }
   } on Exception {
     // Best-effort.
@@ -26,10 +25,10 @@ Future<String?> loadPreviousWorkspace() async {
   return null;
 }
 
+/// Save the current workspace name as the previous workspace.
 Future<void> savePreviousWorkspace(String name) async {
   try {
-    final path = p.join(await _jjDir(), 'djo-state');
-    await File(path).writeAsString('$name\n');
+    (await _jjStateFile()).writeAsStringSync('$name\n');
   } on Exception {
     // Best-effort.
   }

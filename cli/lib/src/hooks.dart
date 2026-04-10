@@ -3,8 +3,10 @@ import 'dart:io';
 
 import 'package:dojjo/src/config.dart';
 import 'package:dojjo/src/platform.dart';
+import 'package:dojjo/src/state.dart';
 import 'package:dojjo/src/template.dart';
 import 'package:dojjo/src/util/extensions.dart';
+import 'package:path/path.dart' as p;
 
 final _wtStepPattern = RegExp(r'\bwt\s+step\s+');
 final _wtPattern = RegExp(r'\bwt\s+');
@@ -62,41 +64,44 @@ Future<void> _runPipeline(
   required bool blocking,
   required String label,
 }) async {
+  final run = blocking ? _runBlocking : _runInBackground;
   for (final step in pipeline) {
-    if (step.length == 1) {
-      // Single command — run directly.
-      await _runEntry(step.first, context, workingDirectory, blocking: blocking, label: label);
-    } else {
-      // Multiple commands — run in parallel, wait for all.
-      final futures = step.map(
-        (entry) => _runEntry(entry, context, workingDirectory, blocking: blocking, label: label),
-      );
-      await Future.wait(futures);
-    }
+    // Run individual hook entries in parallel
+    await Future.wait([
+      for (final entry in step)
+        run(
+          entry,
+          rewriteWorktrunkCommands(render(entry.command, {...context, 'hook_name': entry.name})),
+          workingDirectory,
+          label,
+        ),
+    ]);
   }
 }
 
-Future<void> _runEntry(
-  HookEntry entry,
-  Map<String, Object?> context,
-  String workingDirectory, {
-  required bool blocking,
-  required String label,
-}) async {
-  final entryContext = {...context, 'hook_name': entry.name};
-  final rendered = rewriteWorktrunkCommands(render(entry.command, entryContext));
+Future<void> _runBlocking(HookEntry entry, String command, String workingDirectory, String label) async {
+  stderr.writeln('$label(${entry.name}): $command');
+  final exitCode = await runShellCommandToSink(command, sink: stderr, workingDirectory: workingDirectory);
+  if (exitCode != 0) {
+    throw Exception('$label/${entry.name} failed with exit code $exitCode');
+  }
+}
 
-  stderr.writeln('$label(${entry.name}): $rendered');
+/// Sanitize a string for use in a filename.
+String _sanitizeForFilename(String input) => input.replaceAll(RegExp(r'[^\w\-.]'), '-');
 
-  final result = await runShellCommand(rendered, workingDirectory: workingDirectory);
-
-  result.stdout?.let(stderr.writeln);
-  result.stderr?.let(stderr.writeln);
-
-  if (result.exitCode != 0) {
-    if (blocking) {
-      throw Exception('$label/${entry.name} failed with exit code ${result.exitCode}');
+Future<void> _runInBackground(HookEntry entry, String command, String workingDirectory, String label) async {
+  final logPath = p.join(await logsDir(), '${_sanitizeForFilename(label)}-${_sanitizeForFilename(entry.name)}.log');
+  final logFile = File(logPath)..parent.createSync(recursive: true);
+  final sink = logFile.openWrite(mode: FileMode.append);
+  try {
+    sink.writeln('$label(${entry.name}): $command');
+    final exitCode = await runShellCommandToSink(command, sink: sink, workingDirectory: workingDirectory);
+    if (exitCode != 0) {
+      stderr.writeln('$label(${entry.name}) failed (exit $exitCode), see $logPath');
     }
-    stderr.writeln('$label(${entry.name}) failed (exit ${result.exitCode}), continuing');
+  } finally {
+    await sink.flush().ignoreErrors();
+    await sink.close();
   }
 }
