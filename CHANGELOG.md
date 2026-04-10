@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Pre-hooks stream output to stderr in real-time; post-hooks write to log files in `.jj/djo/logs/`
 
+### Fixed
+
+- Use compdef for zsh completion
+- User .jj/repo to resolve fallback workspace when removing the current one
+
 ## [0.2.0] - 2026-04-09
 
 ### Fixed
