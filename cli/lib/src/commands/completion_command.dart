@@ -60,9 +60,7 @@ const _bash = r'''_djo_complete() {
 }
 complete -F _djo_complete djo''';
 
-const _zsh = r'''#compdef djo
-
-_djo() {
+const _zsh = r'''_djo() {
   local -a commands
   commands=(
     'config:Configuration management'
@@ -112,7 +110,7 @@ _djo() {
   esac
 }
 
-_djo "$@"''';
+compdef _djo djo''';
 
 const _fish = r'''complete -c djo -f
 
