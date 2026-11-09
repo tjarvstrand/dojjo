@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Resolve the shared `.jj` dir against the workspace instead of the working directory. In a secondary workspace `.jj/repo` holds a path relative to that workspace's own `.jj` dir, so `switch`, `hook` and the previous-workspace pointer no longer write one directory above the repo (`PathNotFoundException` after `switch --create`)
+
 ## [0.2.2] - 2026-06-15
 
 ### Added

@@ -4,18 +4,26 @@ import 'package:dojjo/src/jj.dart';
 import 'package:dojjo/src/util/extensions.dart';
 import 'package:path/path.dart' as p;
 
-/// The shared .jj dir for the repo. In a primary workspace, `.jj/repo` is a
-/// directory; in secondary workspaces it's a text file pointing to the
-/// primary's `.jj/repo`. We resolve back to the parent `.jj` dir either way.
-Future<String> _jjDir() async {
-  final jjDir = p.join(await workspaceRoot(), '.jj');
+/// The shared .jj dir for the repo that [workspacePath] belongs to. In a
+/// primary workspace, `.jj/repo` is a directory; in secondary workspaces it's
+/// a text file pointing to the primary's `.jj/repo`. We resolve back to the
+/// parent `.jj` dir either way.
+///
+/// The pointer in that file is relative to the workspace's own `.jj` dir (jj
+/// may also write an absolute path there), so it must be resolved against
+/// [workspacePath] and never against the current working directory.
+String sharedJjDir(String workspacePath) {
+  final jjDir = p.join(workspacePath, '.jj');
   final repoEntry = File(p.join(jjDir, 'repo'));
   if (repoEntry.existsSync() && FileSystemEntity.typeSync(repoEntry.path) == FileSystemEntityType.file) {
     final repoPath = repoEntry.readAsStringSync().trim();
-    return p.dirname(repoPath);
+    if (repoPath.isEmpty) return jjDir;
+    return p.normalize(p.dirname(p.join(jjDir, repoPath)));
   }
   return jjDir;
 }
+
+Future<String> _jjDir() async => sharedJjDir(await workspaceRoot());
 
 /// The root of the primary (default) workspace.
 Future<String> primaryWorkspaceRoot() async => p.dirname(await _jjDir());
